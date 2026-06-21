@@ -1,8 +1,12 @@
 import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
-import api, { setAuthToken } from "../services/api.js";
+import api from "../services/api.js";
 
-const storedToken = localStorage.getItem("token");
-if (storedToken) setAuthToken(storedToken);
+// The JWT now lives only in an httpOnly cookie (set by the server, sent
+// automatically with `withCredentials`). JavaScript never sees or stores it, so
+// XSS cannot steal the session. We cache only the non-sensitive user profile for
+// instant first paint — the cookie is the source of truth, re-validated on load
+// via fetchMe().
+const cachedUser = JSON.parse(localStorage.getItem("user") || "null");
 
 const errMsg = (err) => err.response?.data?.message || err.message || "Request failed";
 
@@ -45,7 +49,9 @@ export const setTwoFactor = createAsyncThunk("auth/setTwoFactor", async (enabled
   }
 });
 
-// Refresh the signed-in profile (used by Profile page + verification badge).
+// Refresh the signed-in profile AND validate the session cookie. Used to
+// bootstrap auth state on app load and to keep the profile/verification badge
+// fresh. A rejection means there is no valid session (logged out / expired).
 export const fetchMe = createAsyncThunk("auth/fetchMe", async (_, { rejectWithValue }) => {
   try {
     const { data } = await api.get("/auth/me");
@@ -55,57 +61,56 @@ export const fetchMe = createAsyncThunk("auth/fetchMe", async (_, { rejectWithVa
   }
 });
 
-function persist(state, payload) {
-  state.token = payload.token;
-  state.user = payload.user;
-  localStorage.setItem("token", payload.token);
-  localStorage.setItem("user", JSON.stringify(payload.user));
-  setAuthToken(payload.token);
-}
+// Logout clears the httpOnly cookie server-side, then wipes client state.
+export const logoutUser = createAsyncThunk("auth/logoutUser", async (_, { dispatch }) => {
+  try {
+    await api.post("/auth/logout");
+  } catch {
+    // Even if the request fails (e.g. already expired), clear local state.
+  } finally {
+    dispatch(logout());
+  }
+});
 
-// Persist a token issued out-of-band (OAuth redirect) — the user object is then
-// hydrated via fetchMe().
-function persistToken(state, token) {
-  state.token = token;
-  localStorage.setItem("token", token);
-  setAuthToken(token);
+// A token-issuing response (login / verify-email / 2FA) confirms the cookie was
+// set by the server; we adopt the returned user profile. The JWT in the body is
+// intentionally ignored — the browser relies on the cookie.
+function adoptSession(state, user) {
+  state.user = user;
+  state.authenticated = true;
+  localStorage.setItem("user", JSON.stringify(user));
 }
 
 const authSlice = createSlice({
   name: "auth",
   initialState: {
-    token: storedToken,
-    user: JSON.parse(localStorage.getItem("user") || "null"),
+    user: cachedUser,
+    authenticated: false, // not trusted until fetchMe confirms the cookie
+    bootstrapped: false,   // becomes true after the initial session check
     verification: null,
     status: "idle",
     error: null
   },
   reducers: {
     logout(state) {
-      state.token = null;
       state.user = null;
+      state.authenticated = false;
       state.verification = null;
       state.status = "idle";
       state.error = null;
-      localStorage.removeItem("token");
       localStorage.removeItem("user");
-      setAuthToken(null);
     },
     clearAuthError(state) {
-      state.error = null;
-    },
-    sessionFromToken(state, { payload }) {
-      persistToken(state, payload);
-      state.status = "succeeded";
       state.error = null;
     }
   },
   extraReducers: (builder) => {
-    // Token-issuing thunks persist a full session.
+    // Token-issuing thunks confirm an authenticated session (cookie is set).
     [login, verifyEmail, verifyLoginOtp].forEach((thunk) => {
       builder.addCase(thunk.fulfilled, (state, { payload }) => {
         state.status = "succeeded";
-        if (payload?.token) persist(state, payload); // else: needs verification / 2FA — handled by the page
+        // payload.token present == full session; else needs verification / 2FA.
+        if (payload?.token && payload?.user) adoptSession(state, payload.user);
       });
     });
 
@@ -116,8 +121,18 @@ const authSlice = createSlice({
       })
       .addCase(fetchMe.fulfilled, (state, { payload }) => {
         state.user = { ...state.user, ...payload.user };
+        state.authenticated = true;
+        state.bootstrapped = true;
         state.verification = payload.verification || null;
         localStorage.setItem("user", JSON.stringify(state.user));
+      })
+      .addCase(fetchMe.rejected, (state) => {
+        // No valid session cookie — present as logged out.
+        state.user = null;
+        state.authenticated = false;
+        state.bootstrapped = true;
+        state.verification = null;
+        localStorage.removeItem("user");
       });
 
     // Generic pending/rejected for every auth thunk that drives the auth UI.
@@ -129,5 +144,5 @@ const authSlice = createSlice({
   }
 });
 
-export const { logout, clearAuthError, sessionFromToken } = authSlice.actions;
+export const { logout, clearAuthError } = authSlice.actions;
 export default authSlice.reducer;

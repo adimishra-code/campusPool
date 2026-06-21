@@ -10,6 +10,7 @@ import {
   authLimiter, loginLimiter, passwordResetLimiter, otpVerifyLimiter, otpRequestLimiter
 } from "../middleware/rateLimit.middleware.js";
 import { signToken } from "../utils/token.js";
+import { setAuthCookie } from "../utils/cookies.js";
 import { configureOAuth, passport } from "../services/oauth.service.js";
 import { env } from "../config/env.js";
 
@@ -45,9 +46,11 @@ if (configureOAuth()) {
     "/google/callback",
     passport.authenticate("google", { session: false, failureRedirect: `${env.clientUrl}/login?oauth=failed` }),
     (req, res) => {
-      const token = signToken(req.user);
-      // Hand the token back to the SPA, which persists it and routes onward.
-      res.redirect(`${env.clientUrl}/login?token=${token}`);
+      // Set the session as an httpOnly cookie instead of putting the token in
+      // the redirect URL (which would leak it via browser history, the Referer
+      // header and server logs). The SPA hydrates the session via GET /auth/me.
+      setAuthCookie(res, signToken(req.user));
+      res.redirect(`${env.clientUrl}/login?oauth=success`);
     }
   );
 }

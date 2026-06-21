@@ -6,6 +6,7 @@ import College from "../models/College.js";
 import AuditLog from "../models/AuditLog.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { signToken, generateResetToken, hashResetToken } from "../utils/token.js";
+import { setAuthCookie, clearAuthCookie } from "../utils/cookies.js";
 import { issueOtp } from "./verification.controller.js";
 import { env } from "../config/env.js";
 import { sendSms } from "../services/sms.service.js";
@@ -180,9 +181,11 @@ export const verifyEmail = asyncHandler(async (req, res) => {
   await AuditLog.log("verification.submit", "Verification", v._id, user._id, { step: "email_verified" });
 
   const college = user.college ? await College.findById(user.college) : null;
+  const token = signToken(user);
+  setAuthCookie(res, token);
   res.json({
     message: "Email verified",
-    token: signToken(user),
+    token,
     previewOtp: undefined,
     user: publicUser(user, college)
   });
@@ -261,7 +264,9 @@ export const login = asyncHandler(async (req, res) => {
 
   await AuditLog.log("user.login", "User", user._id, user._id, { role: user.role });
 
-  res.json({ token: signToken(user), user: publicUser(user) });
+  const token = signToken(user);
+  setAuthCookie(res, token);
+  res.json({ token, user: publicUser(user) });
 });
 
 // Complete a 2FA login by confirming the emailed OTP.
@@ -294,7 +299,9 @@ export const verifyLoginOtp = asyncHandler(async (req, res) => {
 
   await AuditLog.log("user.login", "User", user._id, user._id, { role: user.role, twoFactor: true });
 
-  res.json({ token: signToken(user), user: publicUser(user) });
+  const token = signToken(user);
+  setAuthCookie(res, token);
+  res.json({ token, user: publicUser(user) });
 });
 
 // Forgot password — email a single-use reset token. Always responds 200 to
@@ -456,5 +463,6 @@ export const logout = asyncHandler(async (req, res) => {
     req.user._id
   );
 
+  clearAuthCookie(res);
   res.json({ message: "Logged out successfully" });
 });

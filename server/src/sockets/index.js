@@ -1,6 +1,20 @@
 import jwt from "jsonwebtoken";
 import { env } from "../config/env.js";
+import { AUTH_COOKIE } from "../utils/cookies.js";
 import Trip from "../models/Trip.js";
+
+// Minimal cookie-header parser (avoids a dependency just to read one cookie).
+function readCookie(cookieHeader, name) {
+  if (!cookieHeader) return null;
+  for (const part of cookieHeader.split(";")) {
+    const idx = part.indexOf("=");
+    if (idx === -1) continue;
+    if (part.slice(0, idx).trim() === name) {
+      return decodeURIComponent(part.slice(idx + 1).trim());
+    }
+  }
+  return null;
+}
 
 /**
  * Socket.IO connection layer.
@@ -23,7 +37,12 @@ async function canAccessTrip(userId, tripId) {
 export function registerSocketHandlers(io) {
   io.use((socket, next) => {
     try {
-      const token = socket.handshake.auth?.token;
+      // Prefer the httpOnly auth cookie (sent on the handshake when the client
+      // connects with withCredentials); fall back to an explicit auth token for
+      // non-browser clients and back-compat.
+      const token =
+        readCookie(socket.handshake.headers?.cookie, AUTH_COOKIE) ||
+        socket.handshake.auth?.token;
       if (!token) return next(new Error("Socket authentication required"));
       socket.user = jwt.verify(token, env.jwtSecret);
       next();

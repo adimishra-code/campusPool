@@ -2,9 +2,13 @@ import http from "http";
 import { Server } from "socket.io";
 import app from "./app.js";
 import { connectDB } from "./config/db.js";
-import { env } from "./config/env.js";
+import { env, assertRequiredSecrets } from "./config/env.js";
 import { registerSocketHandlers } from "./sockets/index.js";
 import { startArrivalEscalationScheduler } from "./services/escalation.service.js";
+
+// Crash early on an insecure production configuration (e.g. missing JWT_SECRET)
+// before any client can connect.
+assertRequiredSecrets();
 
 await connectDB();
 

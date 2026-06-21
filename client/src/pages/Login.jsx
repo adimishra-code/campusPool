@@ -3,7 +3,7 @@ import { useDispatch, useSelector } from "react-redux";
 import { Link, Navigate, useSearchParams } from "react-router-dom";
 import {
   login, register, verifyEmail, resendVerification, verifyLoginOtp,
-  forgotPassword, resetPassword, clearAuthError, sessionFromToken, fetchMe
+  forgotPassword, resetPassword, clearAuthError, fetchMe
 } from "../store/authSlice.js";
 import { trackEvent } from "../services/tracking.js";
 import Seo from "../components/Seo.jsx";
@@ -22,7 +22,7 @@ const GOOGLE_ENABLED = import.meta.env.VITE_GOOGLE_OAUTH_ENABLED === "true";
 
 export default function Login() {
   const dispatch = useDispatch();
-  const { token, status, error } = useSelector((state) => state.auth);
+  const { authenticated, status, error } = useSelector((state) => state.auth);
   const [params, setParams] = useSearchParams();
   const [mode, setMode] = useState("login");
   const [form, setForm] = useState(EMPTY);
@@ -30,18 +30,17 @@ export default function Login() {
   const [info, setInfo] = useState(null); // { previewOtp, message }
   const [localError, setLocalError] = useState(null);
 
-  // Handle OAuth redirect (?token=) and password-reset links (?email=&token=).
+  // Handle OAuth success (?oauth=success) and password-reset links (?email=&token=).
   useEffect(() => {
     const t = params.get("token");
     const email = params.get("email");
     if (t && email) {
-      // Password reset link.
+      // Password reset link (the token here is a reset token, not the session).
       setMode("reset-password");
       setForm((f) => ({ ...f, email, resetToken: t }));
       setParams({}, { replace: true });
-    } else if (t) {
-      // OAuth success — adopt the session and hydrate the profile.
-      dispatch(sessionFromToken(t));
+    } else if (params.get("oauth") === "success") {
+      // OAuth set the httpOnly session cookie server-side — hydrate the profile.
       dispatch(fetchMe());
       setParams({}, { replace: true });
     } else if (params.get("oauth") === "failed") {
@@ -50,7 +49,7 @@ export default function Login() {
     }
   }, [params, dispatch, setParams]);
 
-  if (token) return <Navigate to="/feed" replace />;
+  if (authenticated) return <Navigate to="/feed" replace />;
 
   const loading = status === "loading";
   const set = (k) => (e) => setForm({ ...form, [k]: e.target.value });

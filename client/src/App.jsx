@@ -1,7 +1,9 @@
 import { useEffect } from "react";
+import { useDispatch } from "react-redux";
 import { Navigate, Route, Routes, useLocation } from "react-router-dom";
 import AppShell from "./components/AppShell.jsx";
 import ProtectedRoute from "./components/ProtectedRoute.jsx";
+import AdminRoute from "./components/AdminRoute.jsx";
 import Login from "./pages/Login.jsx";
 import SharedTrip from "./pages/SharedTrip.jsx";
 import FindTrips from "./pages/FindTrips.jsx";
@@ -18,6 +20,7 @@ import Terms from "./pages/Terms.jsx";
 import Support from "./pages/Support.jsx";
 import ReportBug from "./pages/ReportBug.jsx";
 import { trackPageView } from "./services/tracking.js";
+import { fetchMe } from "./store/authSlice.js";
 
 // Fire a (consent-gated) page-view on every route change.
 function RouteTracker() {
@@ -29,6 +32,13 @@ function RouteTracker() {
 }
 
 export default function App() {
+  const dispatch = useDispatch();
+
+  // Bootstrap auth on load: validate the httpOnly session cookie via /auth/me.
+  // Sets `bootstrapped` so ProtectedRoute knows whether a session exists. This
+  // is the only way the SPA can learn about the cookie (it cannot read it).
+  useEffect(() => { dispatch(fetchMe()); }, [dispatch]);
+
   return (
     <>
       <RouteTracker />
@@ -53,8 +63,11 @@ export default function App() {
             <Route path="/trip/:id" element={<TripDetail />} />
             <Route path="/profile" element={<Profile />} />
             <Route path="/verify" element={<Verification />} />
-            <Route path="/admin/verifications" element={<AdminVerifications />} />
-            <Route path="/admin/safety" element={<AdminSafety />} />
+            {/* Admin-only (UX guard; server enforces authorize("admin")). */}
+            <Route element={<AdminRoute />}>
+              <Route path="/admin/verifications" element={<AdminVerifications />} />
+              <Route path="/admin/safety" element={<AdminSafety />} />
+            </Route>
           </Route>
         </Route>
         <Route path="*" element={<Navigate to="/feed" replace />} />

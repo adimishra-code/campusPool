@@ -2,13 +2,26 @@ import dotenv from "dotenv";
 
 dotenv.config();
 
+const isProduction = (process.env.NODE_ENV || "development") === "production";
+
+// Insecure development-only JWT secret. NEVER used in production: the fallback
+// is withheld when NODE_ENV=production (see below) and assertRequiredSecrets()
+// hard-fails boot if a real JWT_SECRET is still missing.
+const DEV_JWT_SECRET = "dev-secret-change-me";
+
 export const env = {
   nodeEnv: process.env.NODE_ENV || "development",
   port: Number(process.env.PORT || 5000),
   clientUrl: process.env.CLIENT_URL || "http://localhost:5173",
   mongoUri: process.env.MONGO_URI || "mongodb://127.0.0.1:27017/uber_clone",
-  jwtSecret: process.env.JWT_SECRET || "dev-secret-change-me",
+  // In production there is no fallback — a missing JWT_SECRET leaves this empty
+  // and assertRequiredSecrets() throws before the server accepts traffic.
+  jwtSecret: process.env.JWT_SECRET || (isProduction ? "" : DEV_JWT_SECRET),
   jwtExpiresIn: process.env.JWT_EXPIRES_IN || "7d",
+  // Cookie SameSite policy for the auth cookie. "lax"/"strict" suit same-site
+  // (frontend + API share a registrable domain); "none" requires HTTPS and is
+  // for cross-site deploys (and should be paired with CSRF tokens).
+  cookieSameSite: process.env.COOKIE_SAMESITE || "lax",
   shareTokenExpiresIn: process.env.SHARE_TOKEN_EXPIRES_IN || "12h",
   googleMapsApiKey: process.env.GOOGLE_MAPS_API_KEY || "",
   appName: process.env.APP_NAME || "CampusPool",
@@ -60,3 +73,26 @@ export const env = {
   surgeMultiplier: Number(process.env.SURGE_MULTIPLIER || 1.2),
   driverRejectTimeoutSeconds: Number(process.env.DRIVER_REJECT_TIMEOUT_SECONDS || 25)
 };
+
+/**
+ * Fail fast at boot when running in production without the secrets required to
+ * sign/verify auth tokens securely. A misconfigured prod deploy must crash on
+ * startup rather than silently fall back to a guessable JWT secret (which would
+ * allow token forgery). Dev/test are unaffected.
+ */
+export function assertRequiredSecrets() {
+  if (env.nodeEnv !== "production") return;
+
+  const problems = [];
+  if (!env.jwtSecret || env.jwtSecret === DEV_JWT_SECRET) {
+    problems.push("JWT_SECRET is required in production and must not be the dev default.");
+  } else if (env.jwtSecret.length < 32) {
+    problems.push("JWT_SECRET should be at least 32 characters of high-entropy randomness.");
+  }
+
+  if (problems.length) {
+    throw new Error(
+      `Refusing to start: insecure production configuration:\n  - ${problems.join("\n  - ")}`
+    );
+  }
+}

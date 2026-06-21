@@ -12,7 +12,7 @@ function fmtTime(d) {
 
 export default function ChatWindow({ tripId }) {
   const dispatch = useDispatch();
-  const { token, user } = useSelector((s) => s.auth);
+  const { user } = useSelector((s) => s.auth);
   const { messages, status, error } = useSelector((s) => s.chat);
   const [draft, setDraft] = useState("");
   const endRef = useRef(null);
@@ -20,7 +20,7 @@ export default function ChatWindow({ tripId }) {
 
   useEffect(() => {
     dispatch(fetchMessages(tripId));
-    const socket = connectSocket(token);
+    const socket = connectSocket();
     socket.emit("chat:join", { tripId });
     const onMessage = (payload) => {
       if (payload.tripId === String(tripId)) dispatch(messageReceived(payload.message));
@@ -30,7 +30,7 @@ export default function ChatWindow({ tripId }) {
       socket.off("chat:message", onMessage);
       dispatch(resetChat());
     };
-  }, [dispatch, tripId, token]);
+  }, [dispatch, tripId]);
 
   useEffect(() => { endRef.current?.scrollIntoView({ behavior: "smooth" }); }, [messages.length]);
 

@@ -1,11 +1,19 @@
 import jwt from "jsonwebtoken";
 import User from "../models/User.js";
 import { env } from "../config/env.js";
+import { AUTH_COOKIE } from "../utils/cookies.js";
+
+// Resolve the JWT from the httpOnly cookie first (browser clients), falling back
+// to the `Authorization: Bearer` header (API/mobile clients and tests).
+function getToken(req) {
+  if (req.cookies?.[AUTH_COOKIE]) return req.cookies[AUTH_COOKIE];
+  const header = req.headers.authorization || "";
+  return header.startsWith("Bearer ") ? header.slice(7) : null;
+}
 
 export async function protect(req, _res, next) {
   try {
-    const header = req.headers.authorization || "";
-    const token = header.startsWith("Bearer ") ? header.slice(7) : null;
+    const token = getToken(req);
     if (!token) {
       const error = new Error("Authentication required");
       error.statusCode = 401;
@@ -33,8 +41,7 @@ export async function protect(req, _res, next) {
 // anonymous and signed-in callers (e.g. analytics page-view tracking).
 export async function optionalAuth(req, _res, next) {
   try {
-    const header = req.headers.authorization || "";
-    const token = header.startsWith("Bearer ") ? header.slice(7) : null;
+    const token = getToken(req);
     if (token) {
       const decoded = jwt.verify(token, env.jwtSecret);
       const user = await User.findById(decoded.id).select("-password");

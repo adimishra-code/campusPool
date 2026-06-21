@@ -1,5 +1,4 @@
 import { useEffect, useRef, useState } from "react";
-import { useSelector } from "react-redux";
 import api from "../services/api.js";
 import { connectSocket } from "../services/socket.js";
 
@@ -16,7 +15,6 @@ const REPORT_CATEGORIES = [
 // check-ins, safe-arrival confirmation, an external share link, reporting a
 // co-traveller, and a live SOS/location feed (relayed over the trip room).
 export default function TripSafety({ tripId, onLiveLocation, members = [] }) {
-  const token = useSelector((s) => s.auth.token);
   const [sosState, setSosState] = useState("idle"); // idle | sending | sent
   const [sharing, setSharing] = useState(false);
   const [incomingSos, setIncomingSos] = useState(null);
@@ -30,7 +28,7 @@ export default function TripSafety({ tripId, onLiveLocation, members = [] }) {
   const watchRef = useRef(null);
 
   useEffect(() => {
-    const socket = connectSocket(token);
+    const socket = connectSocket();
     socketRef.current = socket;
     socket.emit("chat:join", { tripId });
 
@@ -44,7 +42,7 @@ export default function TripSafety({ tripId, onLiveLocation, members = [] }) {
       socket.off("sos:alert", onSos);
       if (watchRef.current != null) navigator.geolocation?.clearWatch(watchRef.current);
     };
-  }, [tripId, token, onLiveLocation]);
+  }, [tripId, onLiveLocation]);
 
   const sendSos = () => {
     if (sosState !== "idle") return;

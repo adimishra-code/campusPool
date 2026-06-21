@@ -20,20 +20,20 @@ const timeAgo = (d) => {
 
 export default function NotificationBell() {
   const dispatch = useDispatch();
-  const token = useSelector((s) => s.auth.token);
+  const authenticated = useSelector((s) => s.auth.authenticated);
   const { items, unread } = useSelector((s) => s.notifications);
   const [open, setOpen] = useState(false);
   const ref = useRef(null);
 
   // Initial load + live updates over the socket.
   useEffect(() => {
-    if (!token) return undefined;
+    if (!authenticated) return undefined;
     dispatch(fetchNotifications());
-    const socket = connectSocket(token);
+    const socket = connectSocket();
     const onNew = (n) => dispatch(notificationReceived(n));
     socket.on("notification:new", onNew);
     return () => socket.off("notification:new", onNew);
-  }, [token, dispatch]);
+  }, [authenticated, dispatch]);
 
   // Close the dropdown on outside click.
   useEffect(() => {

@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, NavLink, Outlet, useLocation } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
-import { fetchMe, logout } from "../store/authSlice.js";
+import { fetchMe, logoutUser } from "../store/authSlice.js";
 import { toggleTheme } from "../store/themeSlice.js";
 import { notificationsReset } from "../store/notificationSlice.js";
 import NotificationBell from "./NotificationBell.jsx";
@@ -72,7 +72,7 @@ export default function AppShell() {
           <Icon name={mode === "light" ? "moon" : "sun"} size={16} />
           {mode === "light" ? "Dark" : "Light"} mode
         </button>
-        <button onClick={() => { dispatch(notificationsReset()); dispatch(logout()); }}>
+        <button onClick={() => { dispatch(notificationsReset()); dispatch(logoutUser()); }}>
           <Icon name="logout" size={16} />
           Logout
         </button>
