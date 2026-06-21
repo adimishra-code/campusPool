@@ -8,7 +8,9 @@ afterEach(clearTestDB);
 describe("Notifications", () => {
   test("lists notifications for the signed-in user (empty by default)", async () => {
     const u = await register({ email: "notif@univ.edu" });
-    const res = await agent().get("/api/notifications").set(...bearer(u.body.token));
+    const res = await agent()
+      .get("/api/notifications")
+      .set(...bearer(u.body.token));
     expect(res.status).toBe(200);
     expect(Array.isArray(res.body.notifications)).toBe(true);
     expect(res.body.notifications.length).toBe(0);
@@ -17,7 +19,9 @@ describe("Notifications", () => {
   test("mark-all-read and mark-one-read succeed", async () => {
     const u = await register({ email: "notif2@univ.edu" });
 
-    const all = await agent().patch("/api/notifications/read-all").set(...bearer(u.body.token));
+    const all = await agent()
+      .patch("/api/notifications/read-all")
+      .set(...bearer(u.body.token));
     expect(all.status).toBe(200);
 
     const one = await agent()

@@ -14,18 +14,27 @@ const TABS = [
 
 export default function MyTrips() {
   const dispatch = useDispatch();
-  const { hosted, joined, pending, completed, counts, status, error } = useSelector((s) => s.trips.mine);
+  const { hosted, joined, pending, completed, counts, status, error } = useSelector(
+    (s) => s.trips.mine
+  );
   const [tab, setTab] = useState("hosted");
 
-  useEffect(() => { dispatch(fetchMyTrips()); }, [dispatch]);
+  useEffect(() => {
+    dispatch(fetchMyTrips());
+  }, [dispatch]);
 
   const data = { hosted, joined, pending, completed }[tab] || [];
 
   return (
     <div className="page">
       <header className="page-head">
-        <div><p className="eyebrow">Your activity</p><h1>My trips</h1></div>
-        <button className="secondary" onClick={() => dispatch(fetchMyTrips())}>Refresh</button>
+        <div>
+          <p className="eyebrow">Your activity</p>
+          <h1>My trips</h1>
+        </div>
+        <button className="secondary" onClick={() => dispatch(fetchMyTrips())}>
+          Refresh
+        </button>
       </header>
 
       <div className="tabs">
@@ -36,7 +45,9 @@ export default function MyTrips() {
             onClick={() => setTab(t.key)}
           >
             {t.label}
-            <span className="tab-count">{counts?.[t.key] ?? ({ hosted, joined, pending, completed }[t.key]?.length ?? 0)}</span>
+            <span className="tab-count">
+              {counts?.[t.key] ?? { hosted, joined, pending, completed }[t.key]?.length ?? 0}
+            </span>
           </button>
         ))}
       </div>
@@ -48,12 +59,18 @@ export default function MyTrips() {
         <EmptyState
           icon="🧳"
           title={`No ${tab} trips`}
-          hint={tab === "hosted" ? "Offer a trip from the Offer Trip tab." : "Join a trip from the Feed to see it here."}
+          hint={
+            tab === "hosted"
+              ? "Offer a trip from the Offer Trip tab."
+              : "Join a trip from the Feed to see it here."
+          }
         />
       )}
 
       <div className="trip-grid">
-        {data.map((trip) => <TripCard key={trip._id} trip={trip} />)}
+        {data.map((trip) => (
+          <TripCard key={trip._id} trip={trip} />
+        ))}
       </div>
     </div>
   );

@@ -20,7 +20,9 @@ collegeSchema.pre("save", function (next) {
 
 // Find the active college that owns the domain of an email address.
 collegeSchema.statics.matchEmail = function (email) {
-  const domain = String(email || "").split("@")[1]?.toLowerCase();
+  const domain = String(email || "")
+    .split("@")[1]
+    ?.toLowerCase();
   if (!domain) return null;
   return this.findOne({ status: "active", domains: domain });
 };

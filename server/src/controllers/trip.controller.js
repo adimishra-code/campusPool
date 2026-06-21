@@ -37,11 +37,11 @@ export const findTripsRules = [
 // Estimate trip cost
 export const estimateTrip = asyncHandler(async (req, res) => {
   const { pickup, destination, seats = 4 } = req.body;
-  
+
   // Try to get cached route
   let routeData;
   const routeTemplate = await RouteTemplate.findNearby(pickup.coordinates.coordinates, 5);
-  
+
   if (routeTemplate && routeTemplate.length > 0) {
     const cached = routeTemplate[0];
     routeData = {
@@ -52,15 +52,17 @@ export const estimateTrip = asyncHandler(async (req, res) => {
   } else {
     routeData = estimateDistanceAndDuration(pickup, destination);
   }
-  
+
   // Calculate carbon saved (avg car emits 0.21 kg CO2/km)
   const carbonSaved = Math.round(routeData.distanceKm * 0.21 * (seats - 1) * 100) / 100;
-  
+
   // Base cost calculation
   const baseRate = 20; // INR
   const perKm = 8;
-  const costPerPerson = Math.round((baseRate + (routeData.distanceKm * perKm)) / Math.max(1, seats - 1));
-  
+  const costPerPerson = Math.round(
+    (baseRate + routeData.distanceKm * perKm) / Math.max(1, seats - 1)
+  );
+
   res.json({
     distanceKm: Math.round(routeData.distanceKm * 10) / 10,
     durationMin: Math.round(routeData.durationMin),
@@ -72,18 +74,18 @@ export const estimateTrip = asyncHandler(async (req, res) => {
 
 // Offer a new trip
 export const offerTrip = asyncHandler(async (req, res) => {
-  const { 
-    pickup, 
-    destination, 
-    departureTime, 
-    vehicleId, 
-    costPerPerson, 
+  const {
+    pickup,
+    destination,
+    departureTime,
+    vehicleId,
+    costPerPerson,
     seats = 4,
     recurringDays,
     notes,
     cancellationPolicy = "moderate"
   } = req.body;
-  
+
   // Verify vehicle belongs to user and is verified
   const vehicle = await Vehicle.findOne({ _id: vehicleId, owner: req.user._id });
   if (!vehicle) {
@@ -91,16 +93,16 @@ export const offerTrip = asyncHandler(async (req, res) => {
     error.statusCode = 404;
     throw error;
   }
-  
+
   if (vehicle.verificationStatus !== "approved") {
     const error = new Error("Vehicle must be verified before offering rides");
     error.statusCode = 400;
     throw error;
   }
-  
+
   // Calculate distance and duration
   const routeData = estimateDistanceAndDuration(pickup, destination);
-  
+
   // Create trip
   const trip = await Trip.create({
     host: req.user._id,
@@ -120,29 +122,31 @@ export const offerTrip = asyncHandler(async (req, res) => {
     notes,
     cancellationPolicy,
     status: "offered",
-    timeline: [{
-      status: "offered",
-      note: "Trip offered"
-    }]
+    timeline: [
+      {
+        status: "offered",
+        note: "Trip offered"
+      }
+    ]
   });
-  
+
   // Cache route template
   if (pickup && destination) {
-    RouteTemplate.findOrCreate(pickup, destination, routeData.polyline, 
+    RouteTemplate.findOrCreate(
+      pickup,
+      destination,
+      routeData.polyline,
       { value: routeData.distanceKm * 1000, text: `${routeData.distanceKm} km` },
       { value: routeData.durationMin * 60, text: `${routeData.durationMin} min` }
     ).catch(console.error);
   }
-  
+
   // Log action
-  await AuditLog.log(
-    "trip.offer",
-    "Trip",
-    trip._id,
-    req.user._id,
-    { pickup: pickup.address, destination: destination.address }
-  );
-  
+  await AuditLog.log("trip.offer", "Trip", trip._id, req.user._id, {
+    pickup: pickup.address,
+    destination: destination.address
+  });
+
   res.status(201).json({
     message: "Trip offered successfully",
     trip: {
@@ -173,13 +177,21 @@ export const findTrips = asyncHandler(async (req, res) => {
     recommendationReason: m.recommendationReason
   }));
 
-  res.json({ trips, total: ranked.length, page: parseInt(page), pages: Math.ceil(ranked.length / limit) });
+  res.json({
+    trips,
+    total: ranked.length,
+    page: parseInt(page),
+    pages: Math.ceil(ranked.length / limit)
+  });
 });
 
 // Get trip details (with host reliability + the viewer's match score).
 export const getTrip = asyncHandler(async (req, res) => {
   const trip = await Trip.findById(req.params.id)
-    .populate("host", "name avatarUrl hostel college trustScore trustBreakdown ratingAverage ratingCount verificationStatus reliabilityStats phone")
+    .populate(
+      "host",
+      "name avatarUrl hostel college trustScore trustBreakdown ratingAverage ratingCount verificationStatus reliabilityStats phone"
+    )
     .populate("vehicle", "make model color seats amenities")
     .populate("passengers.user", "name avatarUrl hostel trustScore")
     .lean();
@@ -197,41 +209,58 @@ export const getTrip = asyncHandler(async (req, res) => {
   }
 
   const match = calculateMatchScore(req.user, trip, {});
+
+  // Gate PII: only the host, an approved/completed passenger, or an admin may see
+  // the host's phone number and the passenger roster. Everyone else gets a
+  // sanitised view (the match score above doesn't depend on these fields).
+  const viewerId = req.user._id.toString();
+  const isHost = trip.host?._id?.toString() === viewerId;
+  const isAdmin = req.user.role === "admin";
+  const isParticipant =
+    isHost ||
+    (trip.passengers || []).some(
+      (p) => p.user?._id?.toString() === viewerId && ["approved", "completed"].includes(p.status)
+    );
+  if (!isParticipant && !isAdmin) {
+    if (trip.host) delete trip.host.phone;
+    trip.passengers = [];
+  }
+
   res.json({ trip, match });
 });
 
 // Join a trip (request to join)
 export const joinTrip = asyncHandler(async (req, res) => {
   const trip = await Trip.findById(req.params.id);
-  
+
   if (!trip) {
     const error = new Error("Trip not found");
     error.statusCode = 404;
     throw error;
   }
-  
+
   // Check if user is the host
   if (trip.host.toString() === req.user._id.toString()) {
     const error = new Error("Cannot join your own trip");
     error.statusCode = 400;
     throw error;
   }
-  
+
   // Check trip status
   if (!["offered", "open"].includes(trip.status)) {
     const error = new Error("Trip is not accepting passengers");
     error.statusCode = 400;
     throw error;
   }
-  
+
   // Check if already a passenger
-  const existing = trip.passengers.find(p => p.user.toString() === req.user._id.toString());
+  const existing = trip.passengers.find((p) => p.user.toString() === req.user._id.toString());
   if (existing) {
     const error = new Error("Already a passenger or requested to join");
     error.statusCode = 400;
     throw error;
   }
-  
+
   // Record a recommendation conversion if this trip had been recommended to the user.
   if (await wasRecommended(req.user._id, trip._id)) {
     MatchEvent.record("recommendation_join", req.user._id, trip._id);
@@ -240,13 +269,7 @@ export const joinTrip = asyncHandler(async (req, res) => {
   await trip.addPassenger(req.user._id, req.body.notes || "");
   await invalidateForTrip(trip._id);
 
-  await AuditLog.log(
-    "trip.join",
-    "Trip",
-    trip._id,
-    req.user._id,
-    { host: trip.host }
-  );
+  await AuditLog.log("trip.join", "Trip", trip._id, req.user._id, { host: trip.host });
 
   res.json({
     message: "Request to join sent",
@@ -257,31 +280,27 @@ export const joinTrip = asyncHandler(async (req, res) => {
 // Host approves passenger
 export const approvePassenger = asyncHandler(async (req, res) => {
   const trip = await Trip.findById(req.params.id);
-  
+
   if (!trip) {
     const error = new Error("Trip not found");
     error.statusCode = 404;
     throw error;
   }
-  
+
   // Verify host
   if (trip.host.toString() !== req.user._id.toString()) {
     const error = new Error("Only the host can approve passengers");
     error.statusCode = 403;
     throw error;
   }
-  
+
   await trip.approvePassenger(req.params.userId);
   await invalidateForTrip(trip._id);
 
-  await AuditLog.log(
-    "trip.approve",
-    "Trip",
-    trip._id,
-    req.user._id,
-    { passenger: req.params.userId }
-  );
-  
+  await AuditLog.log("trip.approve", "Trip", trip._id, req.user._id, {
+    passenger: req.params.userId
+  });
+
   res.json({
     message: "Passenger approved",
     seatsAvailable: trip.seatsAvailable
@@ -291,19 +310,19 @@ export const approvePassenger = asyncHandler(async (req, res) => {
 // Host rejects passenger
 export const rejectPassenger = asyncHandler(async (req, res) => {
   const trip = await Trip.findById(req.params.id);
-  
+
   if (!trip) {
     const error = new Error("Trip not found");
     error.statusCode = 404;
     throw error;
   }
-  
+
   if (trip.host.toString() !== req.user._id.toString()) {
     const error = new Error("Only the host can reject passengers");
     error.statusCode = 403;
     throw error;
   }
-  
+
   const { reason } = req.body;
   await trip.rejectPassenger(req.params.userId, reason);
   await invalidateForTrip(trip._id);
@@ -316,27 +335,27 @@ export const rejectPassenger = asyncHandler(async (req, res) => {
 // Leave/cancel participation
 export const leaveTrip = asyncHandler(async (req, res) => {
   const trip = await Trip.findById(req.params.id);
-  
+
   if (!trip) {
     const error = new Error("Trip not found");
     error.statusCode = 404;
     throw error;
   }
-  
-  const passenger = trip.passengers.find(p => p.user.toString() === req.user._id.toString());
+
+  const passenger = trip.passengers.find((p) => p.user.toString() === req.user._id.toString());
   if (!passenger) {
     const error = new Error("Not a passenger on this trip");
     error.statusCode = 400;
     throw error;
   }
-  
+
   if (passenger.status === "approved") {
     passenger.status = "cancelled";
     trip.seatsAvailable += 1;
   } else {
-    trip.passengers = trip.passengers.filter(p => p.user.toString() !== req.user._id.toString());
+    trip.passengers = trip.passengers.filter((p) => p.user.toString() !== req.user._id.toString());
   }
-  
+
   trip.timeline.push({
     status: "passenger_left",
     note: "Passenger left",
@@ -352,31 +371,25 @@ export const leaveTrip = asyncHandler(async (req, res) => {
 // Cancel trip (host only)
 export const cancelTrip = asyncHandler(async (req, res) => {
   const trip = await Trip.findById(req.params.id);
-  
+
   if (!trip) {
     const error = new Error("Trip not found");
     error.statusCode = 404;
     throw error;
   }
-  
+
   if (trip.host.toString() !== req.user._id.toString()) {
     const error = new Error("Only the host can cancel the trip");
     error.statusCode = 403;
     throw error;
   }
-  
+
   const { reason } = req.body;
   await trip.cancel(req.user._id, reason);
   await invalidateForTrip(trip._id);
 
-  await AuditLog.log(
-    "trip.cancel",
-    "Trip",
-    trip._id,
-    req.user._id,
-    { reason }
-  );
-  
+  await AuditLog.log("trip.cancel", "Trip", trip._id, req.user._id, { reason });
+
   res.json({
     message: "Trip cancelled"
   });
@@ -385,21 +398,21 @@ export const cancelTrip = asyncHandler(async (req, res) => {
 // Start trip
 export const startTrip = asyncHandler(async (req, res) => {
   const trip = await Trip.findById(req.params.id);
-  
+
   if (!trip) {
     const error = new Error("Trip not found");
     error.statusCode = 404;
     throw error;
   }
-  
+
   if (trip.host.toString() !== req.user._id.toString()) {
     const error = new Error("Only the host can start the trip");
     error.statusCode = 403;
     throw error;
   }
-  
+
   await trip.start();
-  
+
   res.json({
     message: "Trip started",
     status: trip.status
@@ -409,44 +422,40 @@ export const startTrip = asyncHandler(async (req, res) => {
 // Complete trip
 export const completeTrip = asyncHandler(async (req, res) => {
   const trip = await Trip.findById(req.params.id);
-  
+
   if (!trip) {
     const error = new Error("Trip not found");
     error.statusCode = 404;
     throw error;
   }
-  
+
   if (trip.host.toString() !== req.user._id.toString()) {
     const error = new Error("Only the host can complete the trip");
     error.statusCode = 403;
     throw error;
   }
-  
+
   await trip.complete();
   await invalidateForTrip(trip._id);
 
   // Update impact stats for host
   const hostStats = await ImpactStats.getOrCreate(trip.host);
   await hostStats.recordAsHost(trip.distanceKm, trip.carbonSavedKg, trip.totalCost);
-  
+
   // Update impact stats for passengers
-  for (const passenger of trip.passengers.filter(p => p.status === "completed")) {
+  for (const passenger of trip.passengers.filter((p) => p.status === "completed")) {
     const passengerStats = await ImpactStats.getOrCreate(passenger.user);
     await passengerStats.recordAsPassenger(
-      trip.distanceKm / trip.passengers.filter(p => p.status === "approved").length,
-      trip.carbonSavedKg / trip.passengers.filter(p => p.status === "approved").length,
+      trip.distanceKm / trip.passengers.filter((p) => p.status === "approved").length,
+      trip.carbonSavedKg / trip.passengers.filter((p) => p.status === "approved").length,
       trip.costPerPerson
     );
   }
-  
-  await AuditLog.log(
-    "trip.complete",
-    "Trip",
-    trip._id,
-    req.user._id,
-    { passengers: trip.passengers.filter(p => p.status === "approved").length }
-  );
-  
+
+  await AuditLog.log("trip.complete", "Trip", trip._id, req.user._id, {
+    passengers: trip.passengers.filter((p) => p.status === "approved").length
+  });
+
   res.json({
     message: "Trip completed",
     carbonSavedKg: trip.carbonSavedKg,
@@ -457,10 +466,10 @@ export const completeTrip = asyncHandler(async (req, res) => {
 // Get my trips (as host and as passenger)
 export const getMyTrips = asyncHandler(async (req, res) => {
   const { role, status, page = 1, limit = 20 } = req.query;
-  
+
   let hostTrips = [];
   let passengerTrips = [];
-  
+
   // Trips where I'm host
   if (!role || role === "host") {
     const hostQuery = { host: req.user._id };
@@ -470,7 +479,7 @@ export const getMyTrips = asyncHandler(async (req, res) => {
       .sort("-departureTime")
       .limit(parseInt(limit));
   }
-  
+
   // Trips where I'm passenger
   if (!role || role === "passenger") {
     const passengerQuery = { "passengers.user": req.user._id };
@@ -483,7 +492,7 @@ export const getMyTrips = asyncHandler(async (req, res) => {
       .sort("-departureTime")
       .limit(parseInt(limit));
   }
-  
+
   res.json({
     hostTrips,
     passengerTrips,
@@ -492,24 +501,81 @@ export const getMyTrips = asyncHandler(async (req, res) => {
   });
 });
 
-// Update trip status
+// Validation for a manual status update.
+export const tripStatusRules = [
+  body("status")
+    .isIn([
+      "draft",
+      "offered",
+      "open",
+      "full",
+      "departed",
+      "in_progress",
+      "completed",
+      "cancelled",
+      "no_show"
+    ])
+    .withMessage("Invalid status"),
+  body("note").optional().trim().isLength({ max: 500 })
+];
+
+// Allowed lifecycle transitions for a manual status update. Terminal states
+// (completed / cancelled / no_show) cannot transition further. Trips are created
+// "offered" and remain joinable as offered/open/full; "departed" means started.
+const STATUS_TRANSITIONS = {
+  draft: ["offered", "cancelled"],
+  offered: ["open", "full", "departed", "cancelled"],
+  open: ["offered", "full", "departed", "cancelled"],
+  full: ["open", "departed", "cancelled"],
+  departed: ["completed", "no_show", "cancelled"],
+  completed: [],
+  cancelled: [],
+  no_show: []
+};
+
+// Update trip status — host or admin only, with lifecycle-transition enforcement.
 export const updateTripStatus = asyncHandler(async (req, res) => {
   const { status, note } = req.body;
-  
-  const trip = await Trip.findByIdAndUpdate(
-    req.params.id,
-    { 
-      $set: { status },
-      $push: { timeline: { status, note, by: req.user._id } }
-    },
-    { new: true }
-  );
-  
+
+  const trip = await Trip.findById(req.params.id);
   if (!trip) {
     const error = new Error("Trip not found");
     error.statusCode = 404;
     throw error;
   }
+
+  // Only the host or an admin may change a trip's status.
+  const isHost = trip.host.toString() === req.user._id.toString();
+  const isAdmin = req.user.role === "admin";
+  if (!isHost && !isAdmin) {
+    const error = new Error("Only the host or an admin can update trip status");
+    error.statusCode = 403;
+    throw error;
+  }
+
+  // Enforce a valid lifecycle transition from the current status.
+  const allowed = STATUS_TRANSITIONS[trip.status] || [];
+  if (status !== trip.status && !allowed.includes(status)) {
+    const error = new Error(`Cannot change status from "${trip.status}" to "${status}"`);
+    error.statusCode = 400;
+    throw error;
+  }
+
+  trip.status = status;
+  trip.timeline.push({ status, note, by: req.user._id });
+
+  // Keep terminal-state side-effects consistent with the dedicated methods.
+  if (status === "completed") {
+    trip.completedAt = trip.completedAt || new Date();
+    trip.passengers.forEach((p) => {
+      if (p.status === "approved") p.status = "completed";
+    });
+  }
+  if (status === "cancelled" && !trip.cancellation?.cancelledAt) {
+    trip.cancellation = { by: req.user._id, reason: note, cancelledAt: new Date() };
+  }
+
+  await trip.save();
   await invalidateForTrip(trip._id);
 
   res.json({ trip });

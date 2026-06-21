@@ -9,7 +9,14 @@ import {
   notificationReceived
 } from "../store/notificationSlice.js";
 
-const ICON_NAME = { sos: "sos", ride: "ride", payment: "payment", support: "support", system: "system", promo: "promo" };
+const ICON_NAME = {
+  sos: "sos",
+  ride: "ride",
+  payment: "payment",
+  support: "support",
+  system: "system",
+  promo: "promo"
+};
 const timeAgo = (d) => {
   const s = Math.floor((Date.now() - new Date(d).getTime()) / 1000);
   if (s < 60) return "just now";
@@ -38,16 +45,24 @@ export default function NotificationBell() {
   // Close the dropdown on outside click.
   useEffect(() => {
     if (!open) return undefined;
-    const onClick = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
+    const onClick = (e) => {
+      if (ref.current && !ref.current.contains(e.target)) setOpen(false);
+    };
     document.addEventListener("mousedown", onClick);
     return () => document.removeEventListener("mousedown", onClick);
   }, [open]);
 
-  const onItemClick = (n) => { if (!n.readAt) dispatch(markNotificationRead(n._id)); };
+  const onItemClick = (n) => {
+    if (!n.readAt) dispatch(markNotificationRead(n._id));
+  };
 
   return (
     <div className="notif" ref={ref}>
-      <button className="notif-trigger" onClick={() => setOpen((v) => !v)} aria-label="Notifications">
+      <button
+        className="notif-trigger"
+        onClick={() => setOpen((v) => !v)}
+        aria-label="Notifications"
+      >
         <Icon name="bell" size={20} />
         {unread > 0 && <span className="notif-badge">{unread > 9 ? "9+" : unread}</span>}
       </button>
@@ -57,7 +72,9 @@ export default function NotificationBell() {
           <div className="notif-head">
             <strong>Notifications</strong>
             {unread > 0 && (
-              <button className="link-button" onClick={() => dispatch(markAllNotificationsRead())}>Mark all read</button>
+              <button className="link-button" onClick={() => dispatch(markAllNotificationsRead())}>
+                Mark all read
+              </button>
             )}
           </div>
           <div className="notif-list">
@@ -68,7 +85,9 @@ export default function NotificationBell() {
                 className={`notif-item ${n.readAt ? "" : "unread"}`}
                 onClick={() => onItemClick(n)}
               >
-                <span className="notif-icon" aria-hidden><Icon name={ICON_NAME[n.type] || "system"} size={18} /></span>
+                <span className="notif-icon" aria-hidden>
+                  <Icon name={ICON_NAME[n.type] || "system"} size={18} />
+                </span>
                 <span className="notif-body">
                   <strong>{n.title}</strong>
                   <small>{n.message}</small>

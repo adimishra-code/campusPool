@@ -6,7 +6,9 @@ export default function Sheet({ open, onClose, title, children }) {
   // Close on Escape and lock body scroll while open.
   useEffect(() => {
     if (!open) return undefined;
-    const onKey = (e) => { if (e.key === "Escape") onClose(); };
+    const onKey = (e) => {
+      if (e.key === "Escape") onClose();
+    };
     document.addEventListener("keydown", onKey);
     const prev = document.body.style.overflow;
     document.body.style.overflow = "hidden";
@@ -20,9 +22,19 @@ export default function Sheet({ open, onClose, title, children }) {
 
   return (
     <div className="sheet-overlay" onClick={onClose}>
-      <div className="sheet" role="dialog" aria-modal="true" aria-label={title} onClick={(e) => e.stopPropagation()}>
+      <div
+        className="sheet"
+        role="dialog"
+        aria-modal="true"
+        aria-label={title}
+        onClick={(e) => e.stopPropagation()}
+      >
         <div className="sheet-grip" aria-hidden />
-        {title && <div className="sheet-head"><strong>{title}</strong></div>}
+        {title && (
+          <div className="sheet-head">
+            <strong>{title}</strong>
+          </div>
+        )}
         <div className="sheet-body">{children}</div>
       </div>
     </div>

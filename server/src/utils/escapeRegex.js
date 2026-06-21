@@ -4,7 +4,9 @@
 // "(a+)+$" causing catastrophic backtracking). We escape every special char
 // and cap length so the value is treated as a literal substring.
 export function escapeRegex(input = "", maxLen = 100) {
-  return String(input).slice(0, maxLen).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  return String(input)
+    .slice(0, maxLen)
+    .replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
 export default escapeRegex;

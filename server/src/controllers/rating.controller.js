@@ -48,7 +48,14 @@ export const createRating = asyncHandler(async (req, res) => {
 
   let rating;
   try {
-    rating = await Rating.create({ trip: tripId, fromUser: req.user._id, toUser, role, score, review });
+    rating = await Rating.create({
+      trip: tripId,
+      fromUser: req.user._id,
+      toUser,
+      role,
+      score,
+      review
+    });
   } catch (err) {
     if (err?.code === 11000) {
       const dup = new Error("You have already rated this user for this trip");

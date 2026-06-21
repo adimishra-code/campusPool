@@ -7,16 +7,17 @@ import { makeRateLimitStore } from "../config/redis.js";
 // /api/auth router — so frequent authed reads like GET /me aren't throttled.
 // Disabled under tests; threshold tunable via AUTH_RATE_LIMIT. Backed by Redis
 // when REDIS_URL is set (shared across replicas), else an in-memory store.
-export const authLimiter = env.nodeEnv === "test"
-  ? (_req, _res, next) => next()
-  : rateLimit({
-      windowMs: 15 * 60 * 1000,
-      limit: env.authRateLimit,
-      standardHeaders: true,
-      legacyHeaders: false,
-      store: makeRateLimitStore("auth"),
-      message: { message: "Too many attempts. Please try again later." }
-    });
+export const authLimiter =
+  env.nodeEnv === "test"
+    ? (_req, _res, next) => next()
+    : rateLimit({
+        windowMs: 15 * 60 * 1000,
+        limit: env.authRateLimit,
+        standardHeaders: true,
+        legacyHeaders: false,
+        store: makeRateLimitStore("auth"),
+        message: { message: "Too many attempts. Please try again later." }
+      });
 
 // Factory so every sensitive endpoint gets its own per-IP bucket. Bypassed under
 // tests (where express-rate-limit's in-memory store would leak across cases).

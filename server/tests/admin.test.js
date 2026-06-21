@@ -11,7 +11,9 @@ describe("Admin routes", () => {
     await register({ role: "student" });
     await register({ role: "host" });
 
-    const res = await agent().get("/api/admin/dashboard").set(...bearer(adminToken));
+    const res = await agent()
+      .get("/api/admin/dashboard")
+      .set(...bearer(adminToken));
     expect(res.status).toBe(200);
     expect(res.body).toHaveProperty("students");
     expect(res.body).toHaveProperty("hosts");
@@ -23,12 +25,16 @@ describe("Admin routes", () => {
     const adminToken = await makeAdmin();
     await register({ email: "listed@univ.edu" });
 
-    const users = await agent().get("/api/admin/users").set(...bearer(adminToken));
+    const users = await agent()
+      .get("/api/admin/users")
+      .set(...bearer(adminToken));
     expect(users.status).toBe(200);
     expect(Array.isArray(users.body.users)).toBe(true);
     expect(users.body.users.length).toBeGreaterThanOrEqual(1);
 
-    const trips = await agent().get("/api/admin/trips").set(...bearer(adminToken));
+    const trips = await agent()
+      .get("/api/admin/trips")
+      .set(...bearer(adminToken));
     expect(trips.status).toBe(200);
     expect(Array.isArray(trips.body.trips)).toBe(true);
   });
@@ -45,7 +51,9 @@ describe("Admin routes", () => {
 
   test("blocks non-admins (403) and anonymous callers (401)", async () => {
     const u = await register({ email: "nosy@univ.edu" });
-    const forbidden = await agent().get("/api/admin/dashboard").set(...bearer(u.body.token));
+    const forbidden = await agent()
+      .get("/api/admin/dashboard")
+      .set(...bearer(u.body.token));
     expect(forbidden.status).toBe(403);
 
     const anon = await agent().get("/api/admin/users");

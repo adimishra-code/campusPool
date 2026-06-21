@@ -65,7 +65,10 @@ export async function distanceMatrix({ pickup, destination }) {
   if (!element || element.status !== "OK") return null;
   return {
     distanceKm: Number((element.distance.value / 1000).toFixed(2)),
-    durationMin: Math.max(1, Math.round((element.duration_in_traffic?.value || element.duration.value) / 60)),
+    durationMin: Math.max(
+      1,
+      Math.round((element.duration_in_traffic?.value || element.duration.value) / 60)
+    ),
     etaSeconds: element.duration_in_traffic?.value || element.duration.value
   };
 }

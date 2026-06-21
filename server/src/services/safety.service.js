@@ -21,7 +21,11 @@ export async function recomputeSafetyScore(userId) {
     Report.countDocuments({ reportedUser: userId, status: "actioned" }),
     Report.countDocuments({ reportedUser: userId, status: { $in: ["open", "reviewing"] } }),
     Trip.countDocuments({ host: userId, status: "completed" }),
-    Trip.countDocuments({ host: userId, status: "completed", "safety.arrivalConfirmedAt": { $exists: true, $ne: null } })
+    Trip.countDocuments({
+      host: userId,
+      status: "completed",
+      "safety.arrivalConfirmedAt": { $exists: true, $ne: null }
+    })
   ]);
 
   const noShows = user.reliabilityStats?.noShows || 0;

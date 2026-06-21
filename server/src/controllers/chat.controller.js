@@ -51,7 +51,11 @@ export const listMessages = asyncHandler(async (req, res) => {
   );
 
   const io = req.app.get("io");
-  if (io) io.to(`trip:${trip._id}`).emit("chat:read", { tripId: String(trip._id), userId: String(req.user._id) });
+  if (io)
+    io.to(`trip:${trip._id}`).emit("chat:read", {
+      tripId: String(trip._id),
+      userId: String(req.user._id)
+    });
 
   res.json({ messages });
 });
@@ -61,7 +65,12 @@ export const sendMessage = asyncHandler(async (req, res) => {
   const trip = await loadTripOrThrow(req.params.id);
   ensureAccess(trip, req.user._id);
 
-  const created = await Message.create({ trip: trip._id, sender: req.user._id, body: req.body.body, readBy: [req.user._id] });
+  const created = await Message.create({
+    trip: trip._id,
+    sender: req.user._id,
+    body: req.body.body,
+    readBy: [req.user._id]
+  });
   const message = await Message.findById(created._id).populate("sender", "name avatarUrl").lean();
 
   const io = req.app.get("io");

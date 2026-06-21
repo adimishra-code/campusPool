@@ -19,7 +19,9 @@ export const sosRules = [
 function isParticipant(trip, userId) {
   const id = userId.toString();
   if (trip.host.toString() === id) return true;
-  return trip.passengers.some((p) => p.user.toString() === id && ["approved", "completed"].includes(p.status));
+  return trip.passengers.some(
+    (p) => p.user.toString() === id && ["approved", "completed"].includes(p.status)
+  );
 }
 
 // POST /api/trips/:id/sos
@@ -37,10 +39,18 @@ export const triggerSos = asyncHandler(async (req, res) => {
   }
 
   const { location, note } = req.body;
-  const contacts = (req.user.emergencyContacts || []).map((c) => ({ name: c.name, phone: c.phone }));
+  const contacts = (req.user.emergencyContacts || []).map((c) => ({
+    name: c.name,
+    phone: c.phone
+  }));
 
   // Everyone on the trip except the person raising the alarm.
-  const recipients = [trip.host, ...trip.passengers.filter((p) => ["approved", "completed"].includes(p.status)).map((p) => p.user)]
+  const recipients = [
+    trip.host,
+    ...trip.passengers
+      .filter((p) => ["approved", "completed"].includes(p.status))
+      .map((p) => p.user)
+  ]
     .map(String)
     .filter((id) => id !== req.user._id.toString());
   const uniqueRecipients = [...new Set(recipients)];
@@ -91,7 +101,12 @@ export const triggerSos = asyncHandler(async (req, res) => {
 
   res.status(201).json({
     message: "SOS raised. Trip members and operations have been alerted.",
-    sos: { id: sos._id, status: sos.status, notifiedParticipants: uniqueRecipients.length, notifiedContacts: contacts.length }
+    sos: {
+      id: sos._id,
+      status: sos.status,
+      notifiedParticipants: uniqueRecipients.length,
+      notifiedContacts: contacts.length
+    }
   });
 });
 
@@ -177,7 +192,10 @@ export const confirmArrival = asyncHandler(async (req, res) => {
     });
   }
 
-  res.json({ message: "Safe arrival confirmed", arrivalConfirmedAt: trip.safety.arrivalConfirmedAt });
+  res.json({
+    message: "Safe arrival confirmed",
+    arrivalConfirmedAt: trip.safety.arrivalConfirmedAt
+  });
 });
 
 // POST /api/safety/sos/:id/resolve — by the raiser or an admin.
@@ -238,7 +256,9 @@ export const getSharedTrip = asyncHandler(async (req, res) => {
   try {
     decoded = verifyShareToken(req.params.token);
   } catch (err) {
-    const error = new Error(err.name === "TokenExpiredError" ? "This share link has expired" : "Invalid share link");
+    const error = new Error(
+      err.name === "TokenExpiredError" ? "This share link has expired" : "Invalid share link"
+    );
     error.statusCode = err.statusCode || 401;
     throw error;
   }
@@ -276,7 +296,14 @@ export const getSharedTrip = asyncHandler(async (req, res) => {
 
 export const reportRules = [
   body("reportedUser").isMongoId().withMessage("reportedUser is required"),
-  body("category").isIn(["harassment", "unsafe_driving", "no_show", "inappropriate_behavior", "fraud", "other"]),
+  body("category").isIn([
+    "harassment",
+    "unsafe_driving",
+    "no_show",
+    "inappropriate_behavior",
+    "fraud",
+    "other"
+  ]),
   body("description").trim().isLength({ min: 5, max: 1000 }),
   body("trip").optional().isMongoId()
 ];

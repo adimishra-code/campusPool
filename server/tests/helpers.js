@@ -23,14 +23,16 @@ export const inMinutes = (mins) => new Date(Date.now() + mins * 60000).toISOStri
 // before. Validation/duplicate errors (no previewOtp) pass straight through.
 export async function register(overrides = {}) {
   const email = overrides.email || `u_${rnd()}@univ.edu`;
-  const res = await request(app).post("/api/auth/register").send({
-    name: "Test User",
-    phone: phone(),
-    password: "password123",
-    role: "student",
-    ...overrides,
-    email
-  });
+  const res = await request(app)
+    .post("/api/auth/register")
+    .send({
+      name: "Test User",
+      phone: phone(),
+      password: "password123",
+      role: "student",
+      ...overrides,
+      email
+    });
   if (res.body?.needsEmailVerification && res.body?.previewOtp) {
     return request(app).post("/api/auth/verify-email").send({ email, otp: res.body.previewOtp });
   }
@@ -39,7 +41,15 @@ export async function register(overrides = {}) {
 
 export async function makeAdmin() {
   const email = `admin_${rnd()}@univ.edu`;
-  await User.create({ name: "Admin", email, phone: phone(), password: "password123", role: "admin", verificationStatus: "approved", emailVerified: true });
+  await User.create({
+    name: "Admin",
+    email,
+    phone: phone(),
+    password: "password123",
+    role: "admin",
+    verificationStatus: "approved",
+    emailVerified: true
+  });
   const res = await request(app).post("/api/auth/login").send({ email, password: "password123" });
   return res.body.token;
 }
@@ -49,21 +59,36 @@ export async function makeVerifiedHost(adminToken, { hostel } = {}) {
   const reg = await register({ role: "host", hostel });
   const token = reg.body.token;
   const userId = reg.body.user.id;
-  const v = await request(app).post("/api/vehicles").set(...bearer(token))
-    .send({ make: "Maruti", model: "Swift", color: "Red", plateNumber: `KA${Math.floor(Math.random() * 1e8)}`, seats: 4, category: "car" });
+  const v = await request(app)
+    .post("/api/vehicles")
+    .set(...bearer(token))
+    .send({
+      make: "Maruti",
+      model: "Swift",
+      color: "Red",
+      plateNumber: `KA${Math.floor(Math.random() * 1e8)}`,
+      seats: 4,
+      category: "car"
+    });
   const vehicleId = v.body.vehicle._id;
-  await request(app).patch(`/api/vehicles/admin/${vehicleId}/approve`).set(...bearer(adminToken)).send({});
+  await request(app)
+    .patch(`/api/vehicles/admin/${vehicleId}/approve`)
+    .set(...bearer(adminToken))
+    .send({});
   return { token, userId, vehicleId };
 }
 
 export async function offerTrip(hostToken, vehicleId, overrides = {}) {
-  return request(app).post("/api/trips/offer").set(...bearer(hostToken)).send({
-    pickup: loc("Main Campus Gate", COORDS.campus),
-    destination: loc("Central Metro Station", COORDS.metro),
-    departureTime: inMinutes(45),
-    vehicleId,
-    seats: 4,
-    costPerPerson: 40,
-    ...overrides
-  });
+  return request(app)
+    .post("/api/trips/offer")
+    .set(...bearer(hostToken))
+    .send({
+      pickup: loc("Main Campus Gate", COORDS.campus),
+      destination: loc("Central Metro Station", COORDS.metro),
+      departureTime: inMinutes(45),
+      vehicleId,
+      seats: 4,
+      costPerPerson: 40,
+      ...overrides
+    });
 }

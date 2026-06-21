@@ -1,3 +1,4 @@
+import crypto from "crypto";
 import { body } from "express-validator";
 import User from "../models/User.js";
 import Verification from "../models/Verification.js";
@@ -26,10 +27,7 @@ export const registerRules = [
   body("hostel").optional().trim()
 ];
 
-export const loginRules = [
-  body("email").isEmail().normalizeEmail(),
-  body("password").notEmpty()
-];
+export const loginRules = [body("email").isEmail().normalizeEmail(), body("password").notEmpty()];
 
 export const emailRule = [body("email").isEmail().normalizeEmail()];
 export const verifyEmailRules = [
@@ -40,6 +38,13 @@ export const resetPasswordRules = [
   body("email").isEmail().normalizeEmail(),
   body("token").trim().notEmpty(),
   body("password").isLength({ min: 8 }).withMessage("Password must be at least 8 characters")
+];
+
+// Phone OTP (request/verify) — validate the phone (and code) before hitting the DB.
+export const otpRequestRules = [body("phone").trim().isLength({ min: 10, max: 15 })];
+export const otpVerifyRules = [
+  body("phone").trim().isLength({ min: 10, max: 15 }),
+  body("code").trim().isLength({ min: 6, max: 6 }).isNumeric()
 ];
 
 // Shape the user object returned to the client on a successful session.
@@ -64,10 +69,12 @@ function publicUser(user, college) {
 
 // Issue an email login-2FA challenge code (5-min validity) on the user record.
 async function issueLoginOtp(user) {
-  const code = String(Math.floor(100000 + Math.random() * 900000));
+  const code = String(crypto.randomInt(100000, 1000000));
   user.otp = { code, expiresAt: new Date(Date.now() + 5 * 60 * 1000), attempts: 0 };
   await user.save();
-  await sendLoginOtpEmail(user.email, code).catch((err) => console.error("Login OTP email failed:", err.message));
+  await sendLoginOtpEmail(user.email, code).catch((err) =>
+    console.error("Login OTP email failed:", err.message)
+  );
   // Never echo OTPs in production / when real mail is configured.
   return !env.mailConfigured && env.nodeEnv !== "production" ? code : undefined;
 }
@@ -86,9 +93,9 @@ export const register = asyncHandler(async (req, res) => {
   });
 
   if (existingUser) {
-    const error = new Error(existingUser.email === email
-      ? "Email already registered"
-      : "Phone already registered");
+    const error = new Error(
+      existingUser.email === email ? "Email already registered" : "Phone already registered"
+    );
     error.statusCode = 400;
     throw error;
   }
@@ -118,7 +125,11 @@ export const register = asyncHandler(async (req, res) => {
   // Initialize feature flags in background
   FeatureFlag.initializeDefaults().catch(console.error);
 
-  await AuditLog.log("user.register", "User", user._id, user._id, { role: safeRole, college: college?.name, hasStudentId: !!studentId });
+  await AuditLog.log("user.register", "User", user._id, user._id, {
+    role: safeRole,
+    college: college?.name,
+    hasStudentId: !!studentId
+  });
 
   res.status(201).json({
     needsEmailVerification: true,
@@ -143,7 +154,7 @@ export const verifyEmail = asyncHandler(async (req, res) => {
   const { email, otp } = req.body;
 
   const user = await User.findOne({ email });
-  const v = user && await Verification.findOne({ user: user._id });
+  const v = user && (await Verification.findOne({ user: user._id }));
 
   if (!user || !v?.collegeEmail?.otp || !v.collegeEmail.otpExpiresAt) {
     const error = new Error("Request a verification code first");
@@ -163,7 +174,9 @@ export const verifyEmail = asyncHandler(async (req, res) => {
       v.collegeEmail.otpExpiresAt = undefined;
     }
     await v.save();
-    const error = new Error(v.collegeEmail.otp ? "Invalid verification code" : "Too many attempts. Request a new code.");
+    const error = new Error(
+      v.collegeEmail.otp ? "Invalid verification code" : "Too many attempts. Request a new code."
+    );
     error.statusCode = 400;
     throw error;
   }
@@ -178,7 +191,9 @@ export const verifyEmail = asyncHandler(async (req, res) => {
   user.emailVerified = true;
   await user.save();
 
-  await AuditLog.log("verification.submit", "Verification", v._id, user._id, { step: "email_verified" });
+  await AuditLog.log("verification.submit", "Verification", v._id, user._id, {
+    step: "email_verified"
+  });
 
   const college = user.college ? await College.findById(user.college) : null;
   const token = signToken(user);
@@ -198,7 +213,9 @@ export const resendVerification = asyncHandler(async (req, res) => {
   const user = await User.findOne({ email });
   let previewOtp;
   if (user && !user.emailVerified) {
-    const v = await Verification.findOne({ user: user._id }) || await Verification.create({ user: user._id, collegeEmail: { email } });
+    const v =
+      (await Verification.findOne({ user: user._id })) ||
+      (await Verification.create({ user: user._id, collegeEmail: { email } }));
     previewOtp = await issueOtp(v, email).catch(() => null);
   }
   res.json({ message: "If that account exists, a verification code has been sent.", previewOtp });
@@ -219,16 +236,18 @@ export const login = asyncHandler(async (req, res) => {
 
   // Temporary lockout after repeated failures.
   if (user.isLocked()) {
-    const error = new Error("Account temporarily locked due to too many failed logins. Try again later.");
+    const error = new Error(
+      "Account temporarily locked due to too many failed logins. Try again later."
+    );
     error.statusCode = 423;
     throw error;
   }
 
   if (!(await user.comparePassword(password))) {
     const lockedNow = await user.registerFailedLogin();
-    const error = new Error(lockedNow
-      ? "Too many failed attempts. Account locked for 15 minutes."
-      : "Invalid credentials");
+    const error = new Error(
+      lockedNow ? "Too many failed attempts. Account locked for 15 minutes." : "Invalid credentials"
+    );
     error.statusCode = lockedNow ? 423 : 401;
     throw error;
   }
@@ -242,9 +261,13 @@ export const login = asyncHandler(async (req, res) => {
   // Hard email gate.
   if (!user.emailVerified) {
     // Re-issue a fresh code so the user can complete verification immediately.
-    const v = await Verification.findOne({ user: user._id }) || await Verification.create({ user: user._id, collegeEmail: { email: user.email } });
+    const v =
+      (await Verification.findOne({ user: user._id })) ||
+      (await Verification.create({ user: user._id, collegeEmail: { email: user.email } }));
     const previewOtp = await issueOtp(v, user.email).catch(() => null);
-    const error = new Error("Please verify your email before logging in. We've sent you a new code.");
+    const error = new Error(
+      "Please verify your email before logging in. We've sent you a new code."
+    );
     error.statusCode = 403;
     error.payload = { needsEmailVerification: true, email: user.email, previewOtp };
     throw error;
@@ -297,7 +320,10 @@ export const verifyLoginOtp = asyncHandler(async (req, res) => {
   user.lastSeen = new Date();
   await user.save();
 
-  await AuditLog.log("user.login", "User", user._id, user._id, { role: user.role, twoFactor: true });
+  await AuditLog.log("user.login", "User", user._id, user._id, {
+    role: user.role,
+    twoFactor: true
+  });
 
   const token = signToken(user);
   setAuthCookie(res, token);
@@ -315,20 +341,33 @@ export const forgotPassword = asyncHandler(async (req, res) => {
     user.resetPasswordToken = hash;
     user.resetPasswordExpires = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
     await user.save();
-    await sendPasswordResetEmail(user.email, raw).catch((err) => console.error("Reset email failed:", err.message));
-    await AuditLog.log("user.profile.update", "User", user._id, user._id, { action: "password_reset_requested" });
+    await sendPasswordResetEmail(user.email, raw).catch((err) =>
+      console.error("Reset email failed:", err.message)
+    );
+    await AuditLog.log("user.profile.update", "User", user._id, user._id, {
+      action: "password_reset_requested"
+    });
     // Dev-only convenience: echo the raw token when real mail isn't configured.
     if (!env.mailConfigured && env.nodeEnv !== "production") previewToken = raw;
   }
-  res.json({ message: "If that account exists, a password reset link has been sent.", previewToken });
+  res.json({
+    message: "If that account exists, a password reset link has been sent.",
+    previewToken
+  });
 });
 
 // Reset password using the token from the email.
 export const resetPassword = asyncHandler(async (req, res) => {
   const { email, token, password } = req.body;
-  const user = await User.findOne({ email }).select("+resetPasswordToken +resetPasswordExpires +password");
+  const user = await User.findOne({ email }).select(
+    "+resetPasswordToken +resetPasswordExpires +password"
+  );
 
-  if (!user?.resetPasswordToken || !user.resetPasswordExpires || user.resetPasswordExpires < new Date()) {
+  if (
+    !user?.resetPasswordToken ||
+    !user.resetPasswordExpires ||
+    user.resetPasswordExpires < new Date()
+  ) {
     const error = new Error("Reset link is invalid or has expired");
     error.statusCode = 400;
     throw error;
@@ -345,7 +384,9 @@ export const resetPassword = asyncHandler(async (req, res) => {
   await user.resetLoginAttempts();
   await user.save();
 
-  await AuditLog.log("user.profile.update", "User", user._id, user._id, { action: "password_reset" });
+  await AuditLog.log("user.profile.update", "User", user._id, user._id, {
+    action: "password_reset"
+  });
   res.json({ message: "Password updated. You can now log in." });
 });
 
@@ -353,7 +394,7 @@ export const resetPassword = asyncHandler(async (req, res) => {
 export const requestOtp = asyncHandler(async (req, res) => {
   const { phone } = req.body;
 
-  const code = String(Math.floor(100000 + Math.random() * 900000));
+  const code = String(crypto.randomInt(100000, 1000000));
   const user = await User.findOneAndUpdate(
     { phone },
     { otp: { code, expiresAt: new Date(Date.now() + 5 * 60 * 1000), attempts: 0 } },
@@ -367,7 +408,9 @@ export const requestOtp = asyncHandler(async (req, res) => {
   }
 
   if (env.smsConfigured) {
-    await sendSms({ to: phone, body: `Your CampusPool verification code is ${code}` }).catch(() => {});
+    await sendSms({ to: phone, body: `Your CampusPool verification code is ${code}` }).catch(
+      () => {}
+    );
   }
 
   // Only echo the code back when SMS isn't configured AND we're not in
@@ -437,12 +480,14 @@ export const me = asyncHandler(async (req, res) => {
       isActive: user.isActive,
       createdAt: user.createdAt
     },
-    verification: verification ? {
-      status: verification.status,
-      progress: verification.progress,
-      studentIdStatus: verification.studentId?.status,
-      identityStatus: verification.identityProof?.status
-    } : null
+    verification: verification
+      ? {
+          status: verification.status,
+          progress: verification.progress,
+          studentIdStatus: verification.studentId?.status,
+          identityStatus: verification.identityProof?.status
+        }
+      : null
   });
 });
 
@@ -450,18 +495,19 @@ export const me = asyncHandler(async (req, res) => {
 export const setTwoFactor = asyncHandler(async (req, res) => {
   const enabled = Boolean(req.body.enabled);
   await User.findByIdAndUpdate(req.user._id, { twoFactorEnabled: enabled });
-  await AuditLog.log("user.profile.update", "User", req.user._id, req.user._id, { action: "set_2fa", enabled });
-  res.json({ message: enabled ? "Two-factor login enabled" : "Two-factor login disabled", twoFactorEnabled: enabled });
+  await AuditLog.log("user.profile.update", "User", req.user._id, req.user._id, {
+    action: "set_2fa",
+    enabled
+  });
+  res.json({
+    message: enabled ? "Two-factor login enabled" : "Two-factor login disabled",
+    twoFactorEnabled: enabled
+  });
 });
 
 // Logout
 export const logout = asyncHandler(async (req, res) => {
-  await AuditLog.log(
-    "user.logout",
-    "User",
-    req.user._id,
-    req.user._id
-  );
+  await AuditLog.log("user.logout", "User", req.user._id, req.user._id);
 
   clearAuthCookie(res);
   res.json({ message: "Logged out successfully" });

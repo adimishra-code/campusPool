@@ -52,8 +52,14 @@ export default function Verification() {
     })();
   }, [isHost]);
 
-  const flash = (m) => { setMsg(m); setErr(null); };
-  const fail = (e) => { setErr(e.response?.data?.message || "Something went wrong"); setMsg(null); };
+  const flash = (m) => {
+    setMsg(m);
+    setErr(null);
+  };
+  const fail = (e) => {
+    setErr(e.response?.data?.message || "Something went wrong");
+    setMsg(null);
+  };
 
   const sendOtp = async () => {
     try {
@@ -61,7 +67,9 @@ export default function Verification() {
       setOtpSent(true);
       setPreviewOtp(data.previewOtp || null);
       flash(data.message);
-    } catch (e) { fail(e); }
+    } catch (e) {
+      fail(e);
+    }
   };
 
   const verifyOtp = async () => {
@@ -70,7 +78,9 @@ export default function Verification() {
       flash("Email verified ✓");
       await refresh();
       dispatch(fetchMe());
-    } catch (e) { fail(e); }
+    } catch (e) {
+      fail(e);
+    }
   };
 
   const uploadDoc = async (endpoint, file, extra = {}) => {
@@ -83,21 +93,33 @@ export default function Verification() {
       flash(data.message);
       await refresh();
       dispatch(fetchMe());
-    } catch (e) { fail(e); }
+    } catch (e) {
+      fail(e);
+    }
   };
 
   if (loading) return <Spinner label="Loading verification…" />;
 
   const emailDone = v?.collegeEmail?.verified;
-  const studentDone = v?.studentId?.status === "approved" && v?.identityProof?.status === "approved";
+  const studentDone =
+    v?.studentId?.status === "approved" && v?.identityProof?.status === "approved";
   const vehicleDone = v?.vehicleVerification?.overallStatus === "approved";
 
-  const statusTag = (s) => <span className={`pill ${s === "approved" ? "ok" : s === "rejected" ? "bad" : s ? "warn" : "muted"}`}>{s || "not submitted"}</span>;
+  const statusTag = (s) => (
+    <span
+      className={`pill ${s === "approved" ? "ok" : s === "rejected" ? "bad" : s ? "warn" : "muted"}`}
+    >
+      {s || "not submitted"}
+    </span>
+  );
 
   return (
     <div className="page">
       <header className="page-head">
-        <div><p className="eyebrow">Trust & safety</p><h1>Get verified</h1></div>
+        <div>
+          <p className="eyebrow">Trust & safety</p>
+          <h1>Get verified</h1>
+        </div>
         <span className="pill info">{v?.progress ?? 0}% complete</span>
       </header>
 
@@ -112,39 +134,75 @@ export default function Verification() {
 
       {/* Email verification */}
       <section className="panel">
-        <div className="section-head"><p className="eyebrow">Email verification</p>{statusTag(emailDone ? "approved" : "pending")}</div>
-        <p className="muted-text">Verify your college email ({v?.collegeEmail?.email || user?.email}).</p>
+        <div className="section-head">
+          <p className="eyebrow">Email verification</p>
+          {statusTag(emailDone ? "approved" : "pending")}
+        </div>
+        <p className="muted-text">
+          Verify your college email ({v?.collegeEmail?.email || user?.email}).
+        </p>
         {emailDone ? (
           <div className="alert info">Your college email is verified.</div>
         ) : (
           <div className="inline-form">
-            <button className="secondary" onClick={sendOtp}>{otpSent ? "Resend code" : "Send code"}</button>
+            <button className="secondary" onClick={sendOtp}>
+              {otpSent ? "Resend code" : "Send code"}
+            </button>
             {otpSent && (
               <>
-                <input placeholder="Enter 6-digit code" value={otp} onChange={(e) => setOtp(e.target.value)} maxLength={6} />
-                <button className="primary" onClick={verifyOtp}>Verify</button>
+                <input
+                  placeholder="Enter 6-digit code"
+                  value={otp}
+                  onChange={(e) => setOtp(e.target.value)}
+                  maxLength={6}
+                />
+                <button className="primary" onClick={verifyOtp}>
+                  Verify
+                </button>
               </>
             )}
-            {previewOtp && <span className="dev-hint">Dev code: <strong>{previewOtp}</strong></span>}
+            {previewOtp && (
+              <span className="dev-hint">
+                Dev code: <strong>{previewOtp}</strong>
+              </span>
+            )}
           </div>
         )}
       </section>
 
       {/* Student verification */}
       <section className="panel">
-        <div className="section-head"><p className="eyebrow">Student verification</p></div>
+        <div className="section-head">
+          <p className="eyebrow">Student verification</p>
+        </div>
         <div className="upload-grid">
           <div className="upload-card">
             <strong>Student ID card</strong>
             {statusTag(v?.studentId?.status)}
-            {v?.studentId?.rejectionReason && <small className="field-error">{v.studentId.rejectionReason}</small>}
-            <input type="file" accept="image/*,application/pdf" onChange={(e) => uploadDoc("/verification/upload/student-id", e.target.files[0])} />
+            {v?.studentId?.rejectionReason && (
+              <small className="field-error">{v.studentId.rejectionReason}</small>
+            )}
+            <input
+              type="file"
+              accept="image/*,application/pdf"
+              onChange={(e) => uploadDoc("/verification/upload/student-id", e.target.files[0])}
+            />
           </div>
           <div className="upload-card">
             <strong>College ID</strong>
             {statusTag(v?.identityProof?.status)}
-            {v?.identityProof?.rejectionReason && <small className="field-error">{v.identityProof.rejectionReason}</small>}
-            <input type="file" accept="image/*,application/pdf" onChange={(e) => uploadDoc("/verification/upload/college-id", e.target.files[0], { type: "college_id" })} />
+            {v?.identityProof?.rejectionReason && (
+              <small className="field-error">{v.identityProof.rejectionReason}</small>
+            )}
+            <input
+              type="file"
+              accept="image/*,application/pdf"
+              onChange={(e) =>
+                uploadDoc("/verification/upload/college-id", e.target.files[0], {
+                  type: "college_id"
+                })
+              }
+            />
           </div>
         </div>
       </section>
@@ -152,22 +210,42 @@ export default function Verification() {
       {/* Vehicle verification (hosts) */}
       {isHost && (
         <section className="panel">
-          <div className="section-head"><p className="eyebrow">Vehicle verification</p>{statusTag(v?.vehicleVerification?.overallStatus)}</div>
+          <div className="section-head">
+            <p className="eyebrow">Vehicle verification</p>
+            {statusTag(v?.vehicleVerification?.overallStatus)}
+          </div>
           {vehicles.length === 0 ? (
-            <p className="muted-text">Add a vehicle from the Offer Trip page first, then upload its documents here.</p>
+            <p className="muted-text">
+              Add a vehicle from the Offer Trip page first, then upload its documents here.
+            </p>
           ) : (
             <>
               <label className="field" style={{ maxWidth: 320 }}>
                 <span>Vehicle</span>
                 <select value={vehicleId} onChange={(e) => setVehicleId(e.target.value)}>
-                  {vehicles.map((veh) => <option key={veh._id} value={veh._id}>{veh.make} {veh.model} · {veh.plateNumber}</option>)}
+                  {vehicles.map((veh) => (
+                    <option key={veh._id} value={veh._id}>
+                      {veh.make} {veh.model} · {veh.plateNumber}
+                    </option>
+                  ))}
                 </select>
               </label>
               <div className="upload-grid">
                 {["license", "rc", "photo"].map((t) => (
                   <div className="upload-card" key={t}>
-                    <strong>{t === "rc" ? "RC" : t === "license" ? "Driving license" : "Vehicle photo"}</strong>
-                    <input type="file" accept="image/*,application/pdf" onChange={(e) => uploadDoc("/verification/upload/vehicle", e.target.files[0], { vehicleId, type: t })} />
+                    <strong>
+                      {t === "rc" ? "RC" : t === "license" ? "Driving license" : "Vehicle photo"}
+                    </strong>
+                    <input
+                      type="file"
+                      accept="image/*,application/pdf"
+                      onChange={(e) =>
+                        uploadDoc("/verification/upload/vehicle", e.target.files[0], {
+                          vehicleId,
+                          type: t
+                        })
+                      }
+                    />
                   </div>
                 ))}
               </div>

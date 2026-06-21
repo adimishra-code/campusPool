@@ -35,7 +35,9 @@ const notificationSlice = createSlice({
   },
   extraReducers: (builder) => {
     builder
-      .addCase(fetchNotifications.pending, (state) => { state.status = "loading"; })
+      .addCase(fetchNotifications.pending, (state) => {
+        state.status = "loading";
+      })
       .addCase(fetchNotifications.fulfilled, (state, { payload }) => {
         state.status = "succeeded";
         state.items = payload;
@@ -48,7 +50,9 @@ const notificationSlice = createSlice({
       })
       .addCase(markAllNotificationsRead.fulfilled, (state) => {
         const now = new Date().toISOString();
-        state.items.forEach((n) => { if (!n.readAt) n.readAt = now; });
+        state.items.forEach((n) => {
+          if (!n.readAt) n.readAt = now;
+        });
         state.unread = 0;
       });
   }

@@ -15,7 +15,9 @@ export default [
       "**/coverage/**",
       // Dev/diagnostic tooling (puppeteer harnesses, visual server) — not app code.
       "client/scripts/**",
-      "server/scripts/**"
+      "server/scripts/**",
+      // Documentation + its build tooling (incl. vendored mermaid.min.js) — not app code.
+      "docs/**"
     ]
   },
 

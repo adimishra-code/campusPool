@@ -17,13 +17,17 @@ describe("Maps routes", () => {
 
   test("validates the address query (422)", async () => {
     const u = await register({ email: "mapper@univ.edu" });
-    const res = await agent().get("/api/maps/geocode").set(...bearer(u.body.token));
+    const res = await agent()
+      .get("/api/maps/geocode")
+      .set(...bearer(u.body.token));
     expect(res.status).toBe(422);
   });
 
   test("returns 503 when Maps is not configured", async () => {
     const u = await register({ email: "mapper2@univ.edu" });
-    const res = await agent().get("/api/maps/geocode?address=Main Gate").set(...bearer(u.body.token));
+    const res = await agent()
+      .get("/api/maps/geocode?address=Main Gate")
+      .set(...bearer(u.body.token));
     expect(res.status).toBe(503);
   });
 });

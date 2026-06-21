@@ -22,7 +22,10 @@ export async function sendSms({ to, body }) {
   try {
     const res = await fetch(url, {
       method: "POST",
-      headers: { Authorization: `Basic ${auth}`, "Content-Type": "application/x-www-form-urlencoded" },
+      headers: {
+        Authorization: `Basic ${auth}`,
+        "Content-Type": "application/x-www-form-urlencoded"
+      },
       body: form.toString()
     });
     if (!res.ok) {

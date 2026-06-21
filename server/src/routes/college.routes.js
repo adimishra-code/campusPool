@@ -1,5 +1,9 @@
 import { Router } from "express";
-import { listColleges, createCollege, createCollegeRules } from "../controllers/college.controller.js";
+import {
+  listColleges,
+  createCollege,
+  createCollegeRules
+} from "../controllers/college.controller.js";
 import { protect, authorize } from "../middleware/auth.middleware.js";
 import { validate } from "../middleware/validation.middleware.js";
 

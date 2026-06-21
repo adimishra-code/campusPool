@@ -22,7 +22,9 @@ export default function Footer() {
           <Link to="/report-bug">Report a bug</Link>
           <a href={`mailto:${SUPPORT_EMAIL}`}>{SUPPORT_EMAIL}</a>
         </nav>
-        <small className="footer-copy">© {new Date().getFullYear()} CampusPool. All rights reserved.</small>
+        <small className="footer-copy">
+          © {new Date().getFullYear()} CampusPool. All rights reserved.
+        </small>
       </div>
     </footer>
   );

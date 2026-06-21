@@ -14,16 +14,23 @@ import { asyncHandler } from "../utils/asyncHandler.js";
 export const dashboard = asyncHandler(async (_req, res) => {
   const activeTripStatuses = ["offered", "open", "full", "departed", "in_progress"];
 
-  const [students, hosts, verifiedUsers, activeTrips, completedTrips, pendingVerifications, openTickets] =
-    await Promise.all([
-      User.countDocuments({ role: "student" }),
-      User.countDocuments({ role: "host" }),
-      User.countDocuments({ verificationStatus: "approved" }),
-      Trip.countDocuments({ status: { $in: activeTripStatuses } }),
-      Trip.countDocuments({ status: "completed" }),
-      Verification.countDocuments({ status: { $in: ["pending", "partial"] } }),
-      SupportTicket.countDocuments({ status: { $in: ["open", "assigned"] } })
-    ]);
+  const [
+    students,
+    hosts,
+    verifiedUsers,
+    activeTrips,
+    completedTrips,
+    pendingVerifications,
+    openTickets
+  ] = await Promise.all([
+    User.countDocuments({ role: "student" }),
+    User.countDocuments({ role: "host" }),
+    User.countDocuments({ verificationStatus: "approved" }),
+    Trip.countDocuments({ status: { $in: activeTripStatuses } }),
+    Trip.countDocuments({ status: "completed" }),
+    Verification.countDocuments({ status: { $in: ["pending", "partial"] } }),
+    SupportTicket.countDocuments({ status: { $in: ["open", "assigned"] } })
+  ]);
 
   res.json({
     students,

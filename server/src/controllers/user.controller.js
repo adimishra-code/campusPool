@@ -13,7 +13,11 @@ export const updateProfileRules = [
   body("emergencyContacts").optional().isArray(),
   body("preferences").optional().isObject(),
   // UPI VPA, e.g. name@bank — letters/digits/dot/underscore/hyphen then @handle.
-  body("upiId").optional({ checkFalsy: true }).trim().matches(/^[\w.-]{2,}@[a-zA-Z]{2,}$/).withMessage("Enter a valid UPI ID like name@bank")
+  body("upiId")
+    .optional({ checkFalsy: true })
+    .trim()
+    .matches(/^[\w.-]{2,}@[a-zA-Z]{2,}$/)
+    .withMessage("Enter a valid UPI ID like name@bank")
 ];
 
 export const updatePreferencesRules = [
@@ -22,7 +26,7 @@ export const updatePreferencesRules = [
   body("ac").optional().isBoolean(),
   body("onlySameGender").optional().isBoolean(),
   body("maxDetourMin").optional().isInt({ min: 5, max: 60 }),
-  body("preferredPaymentMethod").optional().isIn(["cash", "upi", "wallet"])
+  body("preferredPaymentMethod").optional().isIn(["cash", "upi"])
 ];
 
 export const userIdRule = [param("id").isMongoId()];
@@ -33,13 +37,13 @@ export const getUser = asyncHandler(async (req, res) => {
   const user = await User.findById(req.params.id || req.user?._id).select(
     "name avatarUrl hostel role verificationStatus trustScore trustBreakdown ratingAverage ratingCount createdAt"
   );
-  
+
   if (!user) {
     const error = new Error("User not found");
     error.statusCode = 404;
     throw error;
   }
-  
+
   res.json({ user });
 });
 
@@ -47,28 +51,24 @@ export const getUser = asyncHandler(async (req, res) => {
 export const updateProfile = asyncHandler(async (req, res) => {
   const allowedFields = ["name", "hostel", "studentId", "avatarUrl", "emergencyContacts", "upiId"];
   const updates = {};
-  
-  allowedFields.forEach(field => {
+
+  allowedFields.forEach((field) => {
     if (req.body[field] !== undefined) {
       updates[field] = req.body[field];
     }
   });
-  
+
   const user = await User.findByIdAndUpdate(
     req.user._id,
     { $set: updates },
     { new: true, runValidators: true }
   );
-  
+
   // Log the action
-  await AuditLog.log(
-    "user.profile.update",
-    "User",
-    user._id,
-    req.user._id,
-    { updatedFields: Object.keys(updates) }
-  );
-  
+  await AuditLog.log("user.profile.update", "User", user._id, req.user._id, {
+    updatedFields: Object.keys(updates)
+  });
+
   res.json({
     message: "Profile updated",
     user: {
@@ -88,21 +88,15 @@ export const updateProfile = asyncHandler(async (req, res) => {
 // Update preferences
 export const updatePreferences = asyncHandler(async (req, res) => {
   const { preferences } = req.body;
-  
+
   const user = await User.findByIdAndUpdate(
     req.user._id,
     { $set: { preferences } },
     { new: true, runValidators: true }
   );
-  
-  await AuditLog.log(
-    "user.preferences.update",
-    "User",
-    user._id,
-    req.user._id,
-    { preferences }
-  );
-  
+
+  await AuditLog.log("user.preferences.update", "User", user._id, req.user._id, { preferences });
+
   res.json({
     message: "Preferences updated",
     preferences: user.preferences
@@ -155,7 +149,9 @@ export const getUserTrips = asyncHandler(async (req, res) => {
 
   // Merge completed trips (host + passenger) and de-duplicate by id.
   const completedMap = new Map();
-  [...completedAsHost, ...completedAsPassenger].forEach((t) => completedMap.set(t._id.toString(), t));
+  [...completedAsHost, ...completedAsPassenger].forEach((t) =>
+    completedMap.set(t._id.toString(), t)
+  );
   const completed = [...completedMap.values()];
 
   res.json({
@@ -208,13 +204,13 @@ export const getTrustScore = asyncHandler(async (req, res) => {
 // Add emergency contact
 export const addEmergencyContact = asyncHandler(async (req, res) => {
   const { name, phone, relationship } = req.body;
-  
+
   const user = await User.findByIdAndUpdate(
     req.user._id,
     { $push: { emergencyContacts: { name, phone, relationship } } },
     { new: true }
   );
-  
+
   res.json({
     message: "Emergency contact added",
     emergencyContacts: user.emergencyContacts
@@ -224,13 +220,13 @@ export const addEmergencyContact = asyncHandler(async (req, res) => {
 // Remove emergency contact
 export const removeEmergencyContact = asyncHandler(async (req, res) => {
   const { contactId } = req.params;
-  
+
   const user = await User.findByIdAndUpdate(
     req.user._id,
     { $pull: { emergencyContacts: { _id: contactId } } },
     { new: true }
   );
-  
+
   res.json({
     message: "Emergency contact removed",
     emergencyContacts: user.emergencyContacts
@@ -240,31 +236,28 @@ export const removeEmergencyContact = asyncHandler(async (req, res) => {
 // Deactivate account
 export const deactivateAccount = asyncHandler(async (req, res) => {
   const { reason } = req.body;
-  
+
   await User.findByIdAndUpdate(req.user._id, {
     isActive: false,
     isDeactivated: true,
     deactivationReason: reason,
     deactivatedAt: new Date()
   });
-  
-  await AuditLog.log(
-    "user.profile.update",
-    "User",
-    req.user._id,
-    req.user._id,
-    { action: "deactivate", reason }
-  );
-  
+
+  await AuditLog.log("user.profile.update", "User", req.user._id, req.user._id, {
+    action: "deactivate",
+    reason
+  });
+
   res.json({ message: "Account deactivated successfully" });
 });
 
 // ADMIN: Get all users
 export const getAllUsers = asyncHandler(async (req, res) => {
   const { role, verificationStatus, hostel, page = 1, limit = 20, search } = req.query;
-  
+
   const query = {};
-  
+
   if (role) query.role = role;
   if (verificationStatus) query.verificationStatus = verificationStatus;
   if (hostel) query.hostel = hostel;
@@ -277,15 +270,15 @@ export const getAllUsers = asyncHandler(async (req, res) => {
       { studentId: { $regex: safe, $options: "i" } }
     ];
   }
-  
+
   const users = await User.find(query)
     .select("-password")
     .sort("-createdAt")
     .skip((page - 1) * limit)
     .limit(parseInt(limit));
-  
+
   const total = await User.countDocuments(query);
-  
+
   res.json({
     users,
     total,
@@ -298,7 +291,7 @@ export const getAllUsers = asyncHandler(async (req, res) => {
 export const adminUpdateUser = asyncHandler(async (req, res) => {
   const { id } = req.params;
   const { role, verificationStatus, isActive } = req.body;
-  
+
   const updates = {};
   if (role) updates.role = role;
   if (verificationStatus) updates.verificationStatus = verificationStatus;
@@ -306,21 +299,15 @@ export const adminUpdateUser = asyncHandler(async (req, res) => {
     updates.isActive = isActive;
     updates.isDeactivated = !isActive;
   }
-  
+
   const user = await User.findByIdAndUpdate(
     id,
     { $set: updates },
     { new: true, runValidators: true }
   );
-  
-  await AuditLog.log(
-    "admin.user.update",
-    "User",
-    user._id,
-    req.user._id,
-    { updates }
-  );
-  
+
+  await AuditLog.log("admin.user.update", "User", user._id, req.user._id, { updates });
+
   res.json({
     message: "User updated",
     user: {

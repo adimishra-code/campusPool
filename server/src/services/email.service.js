@@ -24,7 +24,8 @@ function getTransporter() {
 export async function sendMail({ to, subject, text, html }) {
   const tx = getTransporter();
   if (!tx) {
-    if (env.nodeEnv !== "test") console.log(`[email:dev] To: ${to} | Subject: ${subject}\n${text || ""}`);
+    if (env.nodeEnv !== "test")
+      console.log(`[email:dev] To: ${to} | Subject: ${subject}\n${text || ""}`);
     return { delivered: false, dev: true };
   }
   await tx.sendMail({ from: env.smtpFrom, to, subject, text, html });

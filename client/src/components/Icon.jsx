@@ -2,11 +2,50 @@
 // Use semantic names (e.g. <Icon name="feed" />) so call sites stay readable
 // and we can re-skin the whole app from one place.
 import {
-  Compass, Sparkles, Plus, Car, ShieldCheck, User, Shield, Siren,
-  Bell, Menu, X, Wallet, MessageCircle, Gift, Search, Calendar, Clock,
-  MapPin, ArrowRight, Check, Moon, Sun, LogOut, ChevronDown, Navigation,
-  Users, Star, Leaf, AlertTriangle, Route, Luggage, Inbox, IndianRupee,
-  RefreshCw, Phone, Mail, Share2, MapPinned, BadgeCheck
+  Compass,
+  Sparkles,
+  Plus,
+  Car,
+  ShieldCheck,
+  User,
+  Shield,
+  Siren,
+  Bell,
+  Menu,
+  X,
+  MessageCircle,
+  Gift,
+  Search,
+  Calendar,
+  Clock,
+  MapPin,
+  ArrowRight,
+  Check,
+  Moon,
+  Sun,
+  LogOut,
+  ChevronDown,
+  Navigation,
+  Users,
+  Star,
+  Leaf,
+  AlertTriangle,
+  Route,
+  Luggage,
+  Inbox,
+  IndianRupee,
+  RefreshCw,
+  Phone,
+  Mail,
+  Share2,
+  MapPinned,
+  BadgeCheck,
+  Lock,
+  Eye,
+  EyeOff,
+  Home,
+  GraduationCap,
+  ArrowLeft
 } from "lucide-react";
 
 const MAP = {
@@ -48,13 +87,19 @@ const MAP = {
   alert: AlertTriangle,
   luggage: Luggage,
   inbox: Inbox,
-  wallet: Wallet,
   refresh: RefreshCw,
   phone: Phone,
   mail: Mail,
   share: Share2,
   map: MapPinned,
-  verified: ShieldCheck
+  verified: ShieldCheck,
+  // auth / forms
+  lock: Lock,
+  eye: Eye,
+  "eye-off": EyeOff,
+  home: Home,
+  student: GraduationCap,
+  back: ArrowLeft
 };
 
 export default function Icon({ name, size = 18, strokeWidth = 2.1, className, ...rest }) {

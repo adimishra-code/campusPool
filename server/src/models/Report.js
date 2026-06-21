@@ -5,7 +5,12 @@ import mongoose from "mongoose";
 const reportSchema = new mongoose.Schema(
   {
     reporter: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true, index: true },
-    reportedUser: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true, index: true },
+    reportedUser: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      required: true,
+      index: true
+    },
     trip: { type: mongoose.Schema.Types.ObjectId, ref: "Trip", index: true },
     category: {
       type: String,

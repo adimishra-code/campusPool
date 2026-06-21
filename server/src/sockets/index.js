@@ -41,8 +41,7 @@ export function registerSocketHandlers(io) {
       // connects with withCredentials); fall back to an explicit auth token for
       // non-browser clients and back-compat.
       const token =
-        readCookie(socket.handshake.headers?.cookie, AUTH_COOKIE) ||
-        socket.handshake.auth?.token;
+        readCookie(socket.handshake.headers?.cookie, AUTH_COOKIE) || socket.handshake.auth?.token;
       if (!token) return next(new Error("Socket authentication required"));
       socket.user = jwt.verify(token, env.jwtSecret);
       next();
@@ -72,7 +71,8 @@ export function registerSocketHandlers(io) {
 
     // Live typing indicator (relayed only to participants already in the room).
     socket.on("chat:typing", ({ tripId }) => {
-      if (tripId) socket.to(`trip:${tripId}`).emit("chat:typing", { tripId, userId: socket.user.id });
+      if (tripId)
+        socket.to(`trip:${tripId}`).emit("chat:typing", { tripId, userId: socket.user.id });
     });
 
     // Live trip location — only a verified participant can share, and it is
@@ -80,7 +80,9 @@ export function registerSocketHandlers(io) {
     socket.on("trip:location", async ({ tripId, coordinates }) => {
       if (!tripId || !Array.isArray(coordinates)) return;
       if (await canAccessTrip(socket.user.id, tripId)) {
-        socket.to(`trip:${tripId}`).emit("trip:location", { tripId, userId: socket.user.id, coordinates, at: Date.now() });
+        socket
+          .to(`trip:${tripId}`)
+          .emit("trip:location", { tripId, userId: socket.user.id, coordinates, at: Date.now() });
       }
     });
 

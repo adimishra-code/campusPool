@@ -27,7 +27,9 @@ describe("Feature flags", () => {
 
   test("an admin can toggle a flag on", async () => {
     const adminToken = await makeAdmin();
-    const res = await agent().patch("/api/features/new_experiment").set(...bearer(adminToken))
+    const res = await agent()
+      .patch("/api/features/new_experiment")
+      .set(...bearer(adminToken))
       .send({ enabled: true, percentage: 50 });
     expect(res.status).toBe(200);
     expect(res.body.flag.enabled).toBe(true);
@@ -36,7 +38,10 @@ describe("Feature flags", () => {
 
   test("toggling is admin-only (403) and requires auth (401)", async () => {
     const u = await register({ email: "flagger@univ.edu" });
-    const forbidden = await agent().patch("/api/features/x").set(...bearer(u.body.token)).send({ enabled: true });
+    const forbidden = await agent()
+      .patch("/api/features/x")
+      .set(...bearer(u.body.token))
+      .send({ enabled: true });
     expect(forbidden.status).toBe(403);
 
     const anon = await agent().patch("/api/features/x").send({ enabled: true });

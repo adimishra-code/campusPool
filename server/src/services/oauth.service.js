@@ -13,48 +13,63 @@ let configured = false;
 export function configureOAuth() {
   if (configured || !env.googleOAuthConfigured) return configured;
 
-  passport.use(new GoogleStrategy(
-    {
-      clientID: env.googleClientId,
-      clientSecret: env.googleClientSecret,
-      callbackURL: env.googleCallbackUrl
-    },
-    async (_accessToken, _refreshToken, profile, done) => {
-      try {
-        const email = profile.emails?.[0]?.value?.toLowerCase();
-        const googleId = profile.id;
+  passport.use(
+    new GoogleStrategy(
+      {
+        clientID: env.googleClientId,
+        clientSecret: env.googleClientSecret,
+        callbackURL: env.googleCallbackUrl
+      },
+      async (_accessToken, _refreshToken, profile, done) => {
+        try {
+          const emailEntry = profile.emails?.[0];
+          const email = emailEntry?.value?.toLowerCase();
+          // Google flags each email as verified true/false. Only trust an email we
+          // can prove Google has verified.
+          const emailVerified = emailEntry?.verified === true || emailEntry?.verified === "true";
+          const googleId = profile.id;
 
-        // Prefer an existing link by googleId, else match/claim by email.
-        let user = await User.findOne({ $or: [{ googleId }, ...(email ? [{ email }] : [])] });
-
-        if (user) {
-          if (!user.googleId) user.googleId = googleId;
-          // A Google-verified email satisfies the hard email gate.
-          if (!user.emailVerified) user.emailVerified = true;
-          await user.save();
-        } else {
-          await College.initializeDefaults();
-          const college = email ? await College.matchEmail(email) : null;
-          user = await User.create({
-            name: profile.displayName || email?.split("@")[0] || "Student",
-            email,
-            // Placeholder phone — OAuth users complete this in their profile.
-            phone: `g_${googleId}`.slice(0, 15),
-            googleId,
-            role: "student",
-            college: college?._id,
-            collegeEmail: email,
-            emailVerified: true,
-            verificationStatus: "unverified"
+          // Always match an existing account by googleId; match by email ONLY when
+          // Google has verified that email. Otherwise an attacker controlling an
+          // unverified Google email equal to a victim's could link/take over the
+          // victim's account.
+          let user = await User.findOne({
+            $or: [{ googleId }, ...(email && emailVerified ? [{ email }] : [])]
           });
-          await AuditLog.log("user.register", "User", user._id, user._id, { provider: "google" });
+
+          if (user) {
+            if (!user.googleId) user.googleId = googleId;
+            // A *verified* Google email satisfies the hard email gate.
+            if (emailVerified && !user.emailVerified) user.emailVerified = true;
+            await user.save();
+          } else {
+            // No account to link — refuse to provision one from an unverified email.
+            if (email && !emailVerified) {
+              return done(null, false, { message: "Your Google email is not verified." });
+            }
+            await College.initializeDefaults();
+            const college = email ? await College.matchEmail(email) : null;
+            user = await User.create({
+              name: profile.displayName || email?.split("@")[0] || "Student",
+              email,
+              // Placeholder phone — OAuth users complete this in their profile.
+              phone: `g_${googleId}`.slice(0, 15),
+              googleId,
+              role: "student",
+              college: college?._id,
+              collegeEmail: email,
+              emailVerified: true,
+              verificationStatus: "unverified"
+            });
+            await AuditLog.log("user.register", "User", user._id, user._id, { provider: "google" });
+          }
+          return done(null, user);
+        } catch (err) {
+          return done(err);
         }
-        return done(null, user);
-      } catch (err) {
-        return done(err);
       }
-    }
-  ));
+    )
+  );
 
   configured = true;
   return configured;

@@ -15,22 +15,18 @@ export function hashResetToken(raw) {
 }
 
 export function signToken(user) {
-  return jwt.sign(
-    { id: user._id, role: user.role },
-    env.jwtSecret,
-    { expiresIn: env.jwtExpiresIn }
-  );
+  return jwt.sign({ id: user._id, role: user.role }, env.jwtSecret, {
+    expiresIn: env.jwtExpiresIn
+  });
 }
 
 // Signed, expiring token for an external read-only trip-share link. The link
 // holder can view live trip status without an account, so it carries no auth
 // identity — only the trip id and a fixed `kind` to prevent token reuse.
 export function signShareToken(tripId) {
-  return jwt.sign(
-    { tripId: String(tripId), kind: "trip_share" },
-    env.jwtSecret,
-    { expiresIn: env.shareTokenExpiresIn }
-  );
+  return jwt.sign({ tripId: String(tripId), kind: "trip_share" }, env.jwtSecret, {
+    expiresIn: env.shareTokenExpiresIn
+  });
 }
 
 export function verifyShareToken(token) {

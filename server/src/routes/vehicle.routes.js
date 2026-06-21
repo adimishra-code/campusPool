@@ -1,5 +1,5 @@
 ﻿import express from "express";
-import { 
+import {
   getMyVehicles,
   getVehicle,
   registerVehicle,
@@ -31,7 +31,19 @@ router.post("/:id/documents", protect, validate(vehicleIdRule), submitVehicleDoc
 
 // Admin routes
 router.get("/admin/all", protect, authorize("admin"), getAllVehicles);
-router.patch("/admin/:id/approve", protect, authorize("admin"), validate(vehicleIdRule), approveVehicle);
-router.patch("/admin/:id/reject", protect, authorize("admin"), validate(vehicleIdRule), rejectVehicle);
+router.patch(
+  "/admin/:id/approve",
+  protect,
+  authorize("admin"),
+  validate(vehicleIdRule),
+  approveVehicle
+);
+router.patch(
+  "/admin/:id/reject",
+  protect,
+  authorize("admin"),
+  validate(vehicleIdRule),
+  rejectVehicle
+);
 
 export default router;

@@ -11,14 +11,15 @@ const cachedUser = JSON.parse(localStorage.getItem("user") || "null");
 const errMsg = (err) => err.response?.data?.message || err.message || "Request failed";
 
 // Helper to build a thunk that POSTs and returns the response data.
-const post = (name, url) => createAsyncThunk(`auth/${name}`, async (payload, { rejectWithValue }) => {
-  try {
-    const { data } = await api.post(url, payload);
-    return data;
-  } catch (err) {
-    return rejectWithValue(errMsg(err));
-  }
-});
+const post = (name, url) =>
+  createAsyncThunk(`auth/${name}`, async (payload, { rejectWithValue }) => {
+    try {
+      const { data } = await api.post(url, payload);
+      return data;
+    } catch (err) {
+      return rejectWithValue(errMsg(err));
+    }
+  });
 
 // Login is special: a 403 "email not verified" is a next step in the flow, not
 // an error — surface its payload (needsEmailVerification/email/previewOtp) to the UI.
@@ -40,14 +41,17 @@ export const verifyLoginOtp = post("verifyLoginOtp", "/auth/login/verify-otp");
 export const forgotPassword = post("forgotPassword", "/auth/forgot-password");
 export const resetPassword = post("resetPassword", "/auth/reset-password");
 
-export const setTwoFactor = createAsyncThunk("auth/setTwoFactor", async (enabled, { rejectWithValue }) => {
-  try {
-    const { data } = await api.patch("/auth/2fa", { enabled });
-    return data;
-  } catch (err) {
-    return rejectWithValue(errMsg(err));
+export const setTwoFactor = createAsyncThunk(
+  "auth/setTwoFactor",
+  async (enabled, { rejectWithValue }) => {
+    try {
+      const { data } = await api.patch("/auth/2fa", { enabled });
+      return data;
+    } catch (err) {
+      return rejectWithValue(errMsg(err));
+    }
   }
-});
+);
 
 // Refresh the signed-in profile AND validate the session cookie. Used to
 // bootstrap auth state on app load and to keep the profile/verification badge
@@ -86,7 +90,7 @@ const authSlice = createSlice({
   initialState: {
     user: cachedUser,
     authenticated: false, // not trusted until fetchMe confirms the cookie
-    bootstrapped: false,   // becomes true after the initial session check
+    bootstrapped: false, // becomes true after the initial session check
     verification: null,
     status: "idle",
     error: null
@@ -115,7 +119,9 @@ const authSlice = createSlice({
     });
 
     builder
-      .addCase(register.fulfilled, (state) => { state.status = "succeeded"; })
+      .addCase(register.fulfilled, (state) => {
+        state.status = "succeeded";
+      })
       .addCase(setTwoFactor.fulfilled, (state, { payload }) => {
         if (state.user) state.user = { ...state.user, twoFactorEnabled: payload.twoFactorEnabled };
       })
@@ -136,10 +142,24 @@ const authSlice = createSlice({
       });
 
     // Generic pending/rejected for every auth thunk that drives the auth UI.
-    [login, register, verifyEmail, resendVerification, verifyLoginOtp, forgotPassword, resetPassword].forEach((thunk) => {
+    [
+      login,
+      register,
+      verifyEmail,
+      resendVerification,
+      verifyLoginOtp,
+      forgotPassword,
+      resetPassword
+    ].forEach((thunk) => {
       builder
-        .addCase(thunk.pending, (state) => { state.status = "loading"; state.error = null; })
-        .addCase(thunk.rejected, (state, { payload }) => { state.status = "failed"; state.error = payload; });
+        .addCase(thunk.pending, (state) => {
+          state.status = "loading";
+          state.error = null;
+        })
+        .addCase(thunk.rejected, (state, { payload }) => {
+          state.status = "failed";
+          state.error = payload;
+        });
     });
   }
 });

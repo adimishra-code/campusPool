@@ -1,3 +1,4 @@
+import crypto from "crypto";
 import { body, param } from "express-validator";
 import Verification from "../models/Verification.js";
 import User from "../models/User.js";
@@ -12,7 +13,9 @@ import { env } from "../config/env.js";
 export const otpRequestRules = [body("email").optional().isEmail()];
 export const otpVerifyRules = [body("otp").trim().isLength({ min: 4, max: 8 })];
 export const studentIdRules = [body("number").optional().trim().isLength({ max: 60 })];
-export const collegeIdRules = [body("type").optional().isIn(["college_id", "aadhaar", "passport", "driving_license", "voter_id"])];
+export const collegeIdRules = [
+  body("type").optional().isIn(["college_id", "aadhaar", "passport", "driving_license", "voter_id"])
+];
 export const vehicleDocRules = [
   body("vehicleId").optional().isMongoId(),
   body("type").isIn(["license", "rc", "photo", "insurance", "pollution", "permit"])
@@ -53,7 +56,7 @@ const docUrl = (fileId) => `/api/verification/document/${fileId}`;
  * Returns the OTP only when SMTP is NOT configured (dev), else null.
  */
 export async function issueOtp(verification, email) {
-  const otp = String(Math.floor(100000 + Math.random() * 900000));
+  const otp = String(crypto.randomInt(100000, 1000000));
   verification.collegeEmail = {
     email,
     verified: false,
@@ -80,15 +83,40 @@ export const getVerificationStatus = asyncHandler(async (req, res) => {
       id: v._id,
       status: v.status,
       progress: v.progress,
-      studentId: v.studentId ? { number: v.studentId.number, documentUrl: v.studentId.documentUrl, status: v.studentId.status, rejectionReason: v.studentId.rejectionReason } : null,
-      identityProof: v.identityProof ? { type: v.identityProof.type, documentUrl: v.identityProof.documentUrl, status: v.identityProof.status, rejectionReason: v.identityProof.rejectionReason } : null,
-      vehicleVerification: v.vehicleVerification ? {
-        vehicle: v.vehicleVerification.vehicle,
-        overallStatus: v.vehicleVerification.overallStatus,
-        documents: (v.vehicleVerification.documents || []).map((d) => ({ type: d.type, url: d.url, status: d.status, rejectionReason: d.rejectionReason }))
-      } : null,
+      studentId: v.studentId
+        ? {
+            number: v.studentId.number,
+            documentUrl: v.studentId.documentUrl,
+            status: v.studentId.status,
+            rejectionReason: v.studentId.rejectionReason
+          }
+        : null,
+      identityProof: v.identityProof
+        ? {
+            type: v.identityProof.type,
+            documentUrl: v.identityProof.documentUrl,
+            status: v.identityProof.status,
+            rejectionReason: v.identityProof.rejectionReason
+          }
+        : null,
+      vehicleVerification: v.vehicleVerification
+        ? {
+            vehicle: v.vehicleVerification.vehicle,
+            overallStatus: v.vehicleVerification.overallStatus,
+            documents: (v.vehicleVerification.documents || []).map((d) => ({
+              type: d.type,
+              url: d.url,
+              status: d.status,
+              rejectionReason: d.rejectionReason
+            }))
+          }
+        : null,
       // Never expose the OTP itself.
-      collegeEmail: { email: v.collegeEmail?.email, verified: !!v.collegeEmail?.verified, verifiedAt: v.collegeEmail?.verifiedAt },
+      collegeEmail: {
+        email: v.collegeEmail?.email,
+        verified: !!v.collegeEmail?.verified,
+        verifiedAt: v.collegeEmail?.verifiedAt
+      },
       updatedAt: v.updatedAt
     }
   });
@@ -129,8 +157,13 @@ export const verifyCollegeEmail = asyncHandler(async (req, res) => {
   await v.save();
   await User.findByIdAndUpdate(req.user._id, { collegeEmail: v.collegeEmail.email });
 
-  await AuditLog.log("verification.submit", "Verification", v._id, req.user._id, { step: "email_verified" });
-  res.json({ message: "College email verified", collegeEmail: { email: v.collegeEmail.email, verified: true } });
+  await AuditLog.log("verification.submit", "Verification", v._id, req.user._id, {
+    step: "email_verified"
+  });
+  res.json({
+    message: "College email verified",
+    collegeEmail: { email: v.collegeEmail.email, verified: true }
+  });
 });
 
 // ---- Document uploads ----------------------------------------------------
@@ -152,14 +185,25 @@ export const uploadStudentId = asyncHandler(async (req, res) => {
   });
 
   const v = await getOrCreateVerification(req.user._id);
-  v.studentId = { number: req.body.number || v.studentId?.number, documentUrl: docUrl(fileId), status: "pending" };
+  v.studentId = {
+    number: req.body.number || v.studentId?.number,
+    documentUrl: docUrl(fileId),
+    status: "pending"
+  };
   v.documentIds.push(fileId);
   recomputeStatus(v);
   await v.save();
-  await User.findByIdAndUpdate(req.user._id, { verificationStatus: v.status, studentId: req.body.number || req.user.studentId });
+  await User.findByIdAndUpdate(req.user._id, {
+    verificationStatus: v.status,
+    studentId: req.body.number || req.user.studentId
+  });
 
-  await AuditLog.log("verification.submit", "Verification", v._id, req.user._id, { step: "student_id" });
-  res.status(201).json({ message: "Student ID uploaded", studentId: v.studentId, progress: v.progress });
+  await AuditLog.log("verification.submit", "Verification", v._id, req.user._id, {
+    step: "student_id"
+  });
+  res
+    .status(201)
+    .json({ message: "Student ID uploaded", studentId: v.studentId, progress: v.progress });
 });
 
 export const uploadCollegeId = asyncHandler(async (req, res) => {
@@ -172,14 +216,22 @@ export const uploadCollegeId = asyncHandler(async (req, res) => {
   });
 
   const v = await getOrCreateVerification(req.user._id);
-  v.identityProof = { type: req.body.type || "college_id", documentUrl: docUrl(fileId), status: "pending" };
+  v.identityProof = {
+    type: req.body.type || "college_id",
+    documentUrl: docUrl(fileId),
+    status: "pending"
+  };
   v.documentIds.push(fileId);
   recomputeStatus(v);
   await v.save();
   await User.findByIdAndUpdate(req.user._id, { verificationStatus: v.status });
 
-  await AuditLog.log("verification.submit", "Verification", v._id, req.user._id, { step: "college_id" });
-  res.status(201).json({ message: "College ID uploaded", identityProof: v.identityProof, progress: v.progress });
+  await AuditLog.log("verification.submit", "Verification", v._id, req.user._id, {
+    step: "college_id"
+  });
+  res
+    .status(201)
+    .json({ message: "College ID uploaded", identityProof: v.identityProof, progress: v.progress });
 });
 
 export const uploadVehicleDocument = asyncHandler(async (req, res) => {
@@ -207,7 +259,9 @@ export const uploadVehicleDocument = asyncHandler(async (req, res) => {
   if (!v.vehicleVerification) v.vehicleVerification = { documents: [], overallStatus: "pending" };
   if (vehicleId) v.vehicleVerification.vehicle = vehicleId;
   // Replace any existing doc of the same type.
-  v.vehicleVerification.documents = (v.vehicleVerification.documents || []).filter((d) => d.type !== type);
+  v.vehicleVerification.documents = (v.vehicleVerification.documents || []).filter(
+    (d) => d.type !== type
+  );
   v.vehicleVerification.documents.push({ type, url: docUrl(fileId), status: "pending" });
   v.vehicleVerification.overallStatus = "pending";
   v.documentIds.push(fileId);
@@ -216,8 +270,16 @@ export const uploadVehicleDocument = asyncHandler(async (req, res) => {
 
   if (vehicleId) await Vehicle.findByIdAndUpdate(vehicleId, { verificationStatus: "pending" });
 
-  await AuditLog.log("verification.submit", "Verification", v._id, req.user._id, { step: `vehicle_${type}` });
-  res.status(201).json({ message: `Vehicle ${type} uploaded`, vehicleVerification: v.vehicleVerification, progress: v.progress });
+  await AuditLog.log("verification.submit", "Verification", v._id, req.user._id, {
+    step: `vehicle_${type}`
+  });
+  res
+    .status(201)
+    .json({
+      message: `Vehicle ${type} uploaded`,
+      vehicleVerification: v.vehicleVerification,
+      progress: v.progress
+    });
 });
 
 // Stream a stored document. Only the owner or an admin may view it.
@@ -234,7 +296,9 @@ export const getDocument = asyncHandler(async (req, res) => {
     throw error;
   }
   res.set("Content-Type", info.contentType || "application/octet-stream");
-  openDownloadStream(req.params.fileId).on("error", () => res.sendStatus(404)).pipe(res);
+  openDownloadStream(req.params.fileId)
+    .on("error", () => res.sendStatus(404))
+    .pipe(res);
 });
 
 // ---- Admin: queues + approvals ------------------------------------------
@@ -276,13 +340,18 @@ export const approveVerification = asyncHandler(async (req, res) => {
     v.identityProof.verifiedBy = req.user._id;
   }
   if ((type === "vehicle" || !type) && v.vehicleVerification) {
-    v.vehicleVerification.documents.forEach((d) => { d.status = "approved"; d.verifiedAt = new Date(); });
+    v.vehicleVerification.documents.forEach((d) => {
+      d.status = "approved";
+      d.verifiedAt = new Date();
+    });
     v.vehicleVerification.overallStatus = "approved";
     v.vehicleVerification.approvedAt = new Date();
     v.vehicleVerification.approvedBy = req.user._id;
     // Reflect approval onto the Vehicle so the host can offer trips.
     if (v.vehicleVerification.vehicle) {
-      await Vehicle.findByIdAndUpdate(v.vehicleVerification.vehicle, { verificationStatus: "approved" });
+      await Vehicle.findByIdAndUpdate(v.vehicleVerification.vehicle, {
+        verificationStatus: "approved"
+      });
     }
   }
 
@@ -296,8 +365,14 @@ export const approveVerification = asyncHandler(async (req, res) => {
     ...(vehicleApproved ? { role: "host" } : {})
   });
 
-  await AuditLog.log("verification.approve", "Verification", v._id, req.user._id, { type, userId: v.user._id });
-  res.json({ message: "Verification approved", verification: { id: v._id, status: v.status, progress: v.progress } });
+  await AuditLog.log("verification.approve", "Verification", v._id, req.user._id, {
+    type,
+    userId: v.user._id
+  });
+  res.json({
+    message: "Verification approved",
+    verification: { id: v._id, status: v.status, progress: v.progress }
+  });
 });
 
 export const rejectVerification = asyncHandler(async (req, res) => {
@@ -309,13 +384,24 @@ export const rejectVerification = asyncHandler(async (req, res) => {
     throw error;
   }
 
-  if ((type === "student" || !type) && v.studentId) { v.studentId.status = "rejected"; v.studentId.rejectionReason = reason; }
-  if ((type === "identity" || !type) && v.identityProof) { v.identityProof.status = "rejected"; v.identityProof.rejectionReason = reason; }
+  if ((type === "student" || !type) && v.studentId) {
+    v.studentId.status = "rejected";
+    v.studentId.rejectionReason = reason;
+  }
+  if ((type === "identity" || !type) && v.identityProof) {
+    v.identityProof.status = "rejected";
+    v.identityProof.rejectionReason = reason;
+  }
   if ((type === "vehicle" || !type) && v.vehicleVerification) {
-    v.vehicleVerification.documents.forEach((d) => { d.status = "rejected"; d.rejectionReason = reason; });
+    v.vehicleVerification.documents.forEach((d) => {
+      d.status = "rejected";
+      d.rejectionReason = reason;
+    });
     v.vehicleVerification.overallStatus = "rejected";
     if (v.vehicleVerification.vehicle) {
-      await Vehicle.findByIdAndUpdate(v.vehicleVerification.vehicle, { verificationStatus: "rejected" });
+      await Vehicle.findByIdAndUpdate(v.vehicleVerification.vehicle, {
+        verificationStatus: "rejected"
+      });
     }
   }
 
@@ -324,6 +410,10 @@ export const rejectVerification = asyncHandler(async (req, res) => {
   await v.save();
   await User.findByIdAndUpdate(v.user._id, { verificationStatus: "rejected" });
 
-  await AuditLog.log("verification.reject", "Verification", v._id, req.user._id, { type, reason, userId: v.user._id });
+  await AuditLog.log("verification.reject", "Verification", v._id, req.user._id, {
+    type,
+    reason,
+    userId: v.user._id
+  });
   res.json({ message: "Verification rejected", verification: { id: v._id, status: v.status } });
 });

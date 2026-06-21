@@ -17,8 +17,12 @@ import { routeProximity } from "../utils/geospatial.js";
 const WEIGHTS = { route: 40, timing: 20, trust: 15, hostel: 10, rating: 10, seats: 5 };
 const CACHE_MINUTES = 10;
 
-const norm = (s) => String(s || "").trim().toLowerCase();
-const HOST_FIELDS = "name avatarUrl hostel college trustScore ratingAverage ratingCount verificationStatus reliabilityStats";
+const norm = (s) =>
+  String(s || "")
+    .trim()
+    .toLowerCase();
+const HOST_FIELDS =
+  "name avatarUrl hostel college trustScore ratingAverage ratingCount verificationStatus reliabilityStats";
 const VEHICLE_FIELDS = "make model color seats amenities";
 
 // ---- Timing -------------------------------------------------------------
@@ -61,7 +65,12 @@ export function calculateMatchScore(user = {}, trip = {}, context = {}) {
   const tripDest = trip.destination?.coordinates?.coordinates;
 
   // route
-  const rp = routeProximity(context.pickup || null, context.destination || null, tripPickup, tripDest);
+  const rp = routeProximity(
+    context.pickup || null,
+    context.destination || null,
+    tripPickup,
+    tripDest
+  );
   const route = Math.round((rp.score / 100) * WEIGHTS.route);
 
   // timing
@@ -71,7 +80,8 @@ export function calculateMatchScore(user = {}, trip = {}, context = {}) {
   // hostel / college
   let hostelPct = 0;
   if (user.hostel && host.hostel && norm(user.hostel) === norm(host.hostel)) hostelPct = 100;
-  else if (user.college && host.college && String(user.college) === String(host.college)) hostelPct = 50;
+  else if (user.college && host.college && String(user.college) === String(host.college))
+    hostelPct = 50;
   const hostel = Math.round((hostelPct / 100) * WEIGHTS.hostel);
 
   // trust = verification (8) + trust score (7)
@@ -79,7 +89,8 @@ export function calculateMatchScore(user = {}, trip = {}, context = {}) {
   const trust = Math.round(verifPts + (Math.min(100, host.trustScore ?? 50) / 100) * 7);
 
   // rating
-  const rating = host.ratingCount > 0 ? Math.round(((host.ratingAverage ?? 5) / 5) * WEIGHTS.rating) : 7;
+  const rating =
+    host.ratingCount > 0 ? Math.round(((host.ratingAverage ?? 5) / 5) * WEIGHTS.rating) : 7;
 
   // seats
   const seats = (trip.seatsAvailable ?? 0) > 0 ? WEIGHTS.seats : 0;
@@ -108,7 +119,12 @@ function rank(user, trips, context) {
         trip.host.hostReliability = computeHostReliability(trip.host);
         trip.host.hostReliabilityLabel = hostReliabilityLabel(trip.host.hostReliability);
       }
-      return { trip, matchScore: score, breakdown, recommendationReason: recommendationReason(breakdown) };
+      return {
+        trip,
+        matchScore: score,
+        breakdown,
+        recommendationReason: recommendationReason(breakdown)
+      };
     })
     .sort((a, b) => b.matchScore - a.matchScore);
 }
@@ -126,11 +142,16 @@ function candidateQuery(user, extra = {}) {
 }
 
 // ---- Public: search ranking (fresh, not cached) --------------------------
-export async function searchAndRank(user, { date, pickup, destination, referenceTime, limit = 20 } = {}) {
+export async function searchAndRank(
+  user,
+  { date, pickup, destination, referenceTime, limit = 20 } = {}
+) {
   const extra = {};
   if (date) {
-    const start = new Date(date); start.setHours(0, 0, 0, 0);
-    const end = new Date(date); end.setHours(23, 59, 59, 999);
+    const start = new Date(date);
+    start.setHours(0, 0, 0, 0);
+    const end = new Date(date);
+    end.setHours(23, 59, 59, 999);
     extra.departureTime = { $gte: new Date(Math.max(Date.now(), start.getTime())), $lte: end };
   }
   const trips = await Trip.find(candidateQuery(user, extra))
@@ -144,10 +165,16 @@ export async function searchAndRank(user, { date, pickup, destination, reference
 
 // ---- Public: recommendations (cached 10 min) -----------------------------
 async function readCache(userId) {
-  const docs = await MatchCache.find({ user: userId, expiresAt: { $gt: new Date() } }).sort("-score").lean();
+  const docs = await MatchCache.find({ user: userId, expiresAt: { $gt: new Date() } })
+    .sort("-score")
+    .lean();
   if (!docs.length) return [];
   const ids = docs.map((d) => d.trip);
-  const trips = await Trip.find({ _id: { $in: ids }, status: { $in: ["offered", "open"] }, seatsAvailable: { $gt: 0 } })
+  const trips = await Trip.find({
+    _id: { $in: ids },
+    status: { $in: ["offered", "open"] },
+    seatsAvailable: { $gt: 0 }
+  })
     .populate("host", HOST_FIELDS)
     .populate("vehicle", VEHICLE_FIELDS)
     .lean();
@@ -160,7 +187,12 @@ async function readCache(userId) {
         trip.host.hostReliability = computeHostReliability(trip.host);
         trip.host.hostReliabilityLabel = hostReliabilityLabel(trip.host.hostReliability);
       }
-      return { trip, matchScore: d.score, breakdown: d.breakdown, recommendationReason: d.recommendationReason };
+      return {
+        trip,
+        matchScore: d.score,
+        breakdown: d.breakdown,
+        recommendationReason: d.recommendationReason
+      };
     });
 }
 
@@ -173,7 +205,13 @@ export async function getRecommendations(user, { limit = 10 } = {}) {
   // Cache each recommendation for 10 minutes.
   for (const item of top) {
     await MatchCache.getOrCache(
-      user._id, item.trip._id, item.matchScore, item.breakdown, item.recommendationReason, {}, CACHE_MINUTES
+      user._id,
+      item.trip._id,
+      item.matchScore,
+      item.breakdown,
+      item.recommendationReason,
+      {},
+      CACHE_MINUTES
     );
   }
   return { items: top.slice(0, limit), cached: false };
@@ -195,7 +233,11 @@ export async function getMatchScoreForTrip(user, tripId, context = {}) {
 
 // Was this trip recommended to (cached for) this user? Used for conversion analytics.
 export async function wasRecommended(userId, tripId) {
-  const doc = await MatchCache.findOne({ user: userId, trip: tripId, expiresAt: { $gt: new Date() } }).lean();
+  const doc = await MatchCache.findOne({
+    user: userId,
+    trip: tripId,
+    expiresAt: { $gt: new Date() }
+  }).lean();
   return !!doc;
 }
 

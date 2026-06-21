@@ -60,7 +60,7 @@ app.use(rateLimit({ windowMs: 15 * 60 * 1000, limit: 300, store: makeRateLimitSt
 if (configureOAuth()) app.use(passport.initialize());
 
 app.get("/health", (_req, res) => {
-  res.json({ status: "ok", service: "campus-commute-api" });
+  res.json({ status: "ok", service: "campuspool-api" });
 });
 
 // Auth & User routes (the strict auth limiter is applied per-route inside

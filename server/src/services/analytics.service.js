@@ -85,7 +85,10 @@ export async function platformAnalytics({ from, to }) {
       { $match: { createdAt: range } },
       {
         $group: {
-          _id: { day: { $dateToString: { format: "%Y-%m-%d", date: "$createdAt" } }, role: "$role" },
+          _id: {
+            day: { $dateToString: { format: "%Y-%m-%d", date: "$createdAt" } },
+            role: "$role"
+          },
           count: { $sum: 1 }
         }
       },
@@ -103,8 +106,12 @@ export async function platformAnalytics({ from, to }) {
     MatchEvent.countDocuments({ type: "recommendation_join", createdAt: range })
   ]);
   const recommendationViews = viewAgg[0]?.total || 0;
-  const matchAcceptanceRate = recommendationClicks ? Math.round((recommendationJoins / recommendationClicks) * 100) : 0;
-  const joinConversionRate = recommendationViews ? Math.round((recommendationJoins / recommendationViews) * 100) : 0;
+  const matchAcceptanceRate = recommendationClicks
+    ? Math.round((recommendationJoins / recommendationClicks) * 100)
+    : 0;
+  const joinConversionRate = recommendationViews
+    ? Math.round((recommendationJoins / recommendationViews) * 100)
+    : 0;
 
   return {
     ridesShared,
@@ -160,10 +167,16 @@ export async function safetyAnalytics({ from, to }) {
       { $group: { _id: "$status", count: { $sum: 1 } } }
     ]),
     Trip.countDocuments({ status: "completed", createdAt: range }),
-    Trip.countDocuments({ status: "completed", createdAt: range, "safety.arrivalConfirmedAt": { $exists: true, $ne: null } })
+    Trip.countDocuments({
+      status: "completed",
+      createdAt: range,
+      "safety.arrivalConfirmedAt": { $exists: true, $ne: null }
+    })
   ]);
 
-  const arrivalConfirmationRate = completedTrips ? Math.round((arrivalsConfirmed / completedTrips) * 100) : 0;
+  const arrivalConfirmationRate = completedTrips
+    ? Math.round((arrivalsConfirmed / completedTrips) * 100)
+    : 0;
 
   return {
     activeSos,

@@ -13,7 +13,9 @@ export default function PublicLayout({ children, title, description, seoPath }) 
           <span className="brand-mark">CP</span>
           <strong>CampusPool</strong>
         </Link>
-        <Link to="/login" className="link-button">Sign in</Link>
+        <Link to="/login" className="link-button">
+          Sign in
+        </Link>
       </header>
       <main className="public-content">{children}</main>
       <Footer />

@@ -9,18 +9,24 @@ describe("Analytics admin dashboards", () => {
   test("overview and safety return data for an admin", async () => {
     const adminToken = await makeAdmin();
 
-    const overview = await agent().get("/api/analytics/overview").set(...bearer(adminToken));
+    const overview = await agent()
+      .get("/api/analytics/overview")
+      .set(...bearer(adminToken));
     expect(overview.status).toBe(200);
     expect(overview.body).toBeInstanceOf(Object);
 
-    const safety = await agent().get("/api/analytics/safety").set(...bearer(adminToken));
+    const safety = await agent()
+      .get("/api/analytics/safety")
+      .set(...bearer(adminToken));
     expect(safety.status).toBe(200);
     expect(safety.body).toBeInstanceOf(Object);
   });
 
   test("safety overview is admin-only (403) and requires auth (401)", async () => {
     const u = await register({ email: "snoop@univ.edu" });
-    const forbidden = await agent().get("/api/analytics/safety").set(...bearer(u.body.token));
+    const forbidden = await agent()
+      .get("/api/analytics/safety")
+      .set(...bearer(u.body.token));
     expect(forbidden.status).toBe(403);
 
     const anon = await agent().get("/api/analytics/overview");
@@ -28,7 +34,9 @@ describe("Analytics admin dashboards", () => {
   });
 
   test("track ingests an anonymous event without auth", async () => {
-    const res = await agent().post("/api/analytics/track").send({ type: "page_view", path: "/feed" });
+    const res = await agent()
+      .post("/api/analytics/track")
+      .send({ type: "page_view", path: "/feed" });
     expect(res.status).toBe(202);
     expect(res.body.ok).toBe(true);
   });

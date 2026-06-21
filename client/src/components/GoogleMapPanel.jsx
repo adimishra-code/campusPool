@@ -48,11 +48,19 @@ function FallbackMap({ pickup, destination, caption }) {
     <section className="map-panel fallback">
       <div className="grid-lines" />
       <div className="route" />
-      <div className="map-pin pickup" aria-hidden><Icon name="pin" size={16} /></div>
-      <div className="map-pin destination" aria-hidden><Icon name="navigation" size={15} /></div>
-      <div className="car" aria-hidden><Icon name="ride" size={14} /></div>
+      <div className="map-pin pickup" aria-hidden>
+        <Icon name="pin" size={16} />
+      </div>
+      <div className="map-pin destination" aria-hidden>
+        <Icon name="navigation" size={15} />
+      </div>
+      <div className="car" aria-hidden>
+        <Icon name="ride" size={14} />
+      </div>
       <div className="map-caption">
-        <strong>{pickup?.address || "Pickup"} → {destination?.address || "Destination"}</strong>
+        <strong>
+          {pickup?.address || "Pickup"} → {destination?.address || "Destination"}
+        </strong>
         <small>{caption || "Live map preview appears here once a Google Maps key is added."}</small>
       </div>
     </section>
@@ -60,8 +68,15 @@ function FallbackMap({ pickup, destination, caption }) {
 }
 
 export default function GoogleMapPanel({
-  pickup, destination, route, liveLocation, markers,
-  interactive = false, onPickupSelected, onDestinationSelected, caption
+  pickup,
+  destination,
+  route,
+  liveLocation,
+  markers,
+  interactive = false,
+  onPickupSelected,
+  onDestinationSelected,
+  caption
 }) {
   const pickupRef = useRef(null);
   const destinationRef = useRef(null);
@@ -86,22 +101,50 @@ export default function GoogleMapPanel({
     <section className="google-map-shell">
       {interactive && (
         <div className="map-search-row">
-          <Autocomplete onLoad={(instance) => { pickupRef.current = instance; }} onPlaceChanged={() => selectPlace(pickupRef, onPickupSelected)}>
+          <Autocomplete
+            onLoad={(instance) => {
+              pickupRef.current = instance;
+            }}
+            onPlaceChanged={() => selectPlace(pickupRef, onPickupSelected)}
+          >
             <input defaultValue={pickup?.address} placeholder="Pickup" />
           </Autocomplete>
-          <Autocomplete onLoad={(instance) => { destinationRef.current = instance; }} onPlaceChanged={() => selectPlace(destinationRef, onDestinationSelected)}>
+          <Autocomplete
+            onLoad={(instance) => {
+              destinationRef.current = instance;
+            }}
+            onPlaceChanged={() => selectPlace(destinationRef, onDestinationSelected)}
+          >
             <input defaultValue={destination?.address} placeholder="Destination" />
           </Autocomplete>
         </div>
       )}
-      <GoogleMap mapContainerClassName="google-map" center={toLatLng(pickup)} zoom={12} options={{ disableDefaultUI: true, zoomControl: true }}>
+      <GoogleMap
+        mapContainerClassName="google-map"
+        center={toLatLng(pickup)}
+        zoom={12}
+        options={{ disableDefaultUI: true, zoomControl: true }}
+      >
         {pickup && <Marker position={toLatLng(pickup)} label="P" />}
         {destination && <Marker position={toLatLng(destination)} label="D" />}
-        {(markers || []).map((m, i) => (
-          m?.coordinates ? <Marker key={m.id || i} position={{ lng: m.coordinates[0], lat: m.coordinates[1] }} label={m.label} /> : null
-        ))}
-        {liveLocation?.coordinates && <Marker position={{ lng: liveLocation.coordinates[0], lat: liveLocation.coordinates[1] }} label="•" />}
-        {path.length > 0 && <Polyline path={path} options={{ strokeColor: "#0a7a4b", strokeWeight: 6 }} />}
+        {(markers || []).map((m, i) =>
+          m?.coordinates ? (
+            <Marker
+              key={m.id || i}
+              position={{ lng: m.coordinates[0], lat: m.coordinates[1] }}
+              label={m.label}
+            />
+          ) : null
+        )}
+        {liveLocation?.coordinates && (
+          <Marker
+            position={{ lng: liveLocation.coordinates[0], lat: liveLocation.coordinates[1] }}
+            label="•"
+          />
+        )}
+        {path.length > 0 && (
+          <Polyline path={path} options={{ strokeColor: "#0a7a4b", strokeWeight: 6 }} />
+        )}
       </GoogleMap>
     </section>
   );

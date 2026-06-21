@@ -12,14 +12,17 @@ export const fetchMessages = createAsyncThunk("chat/fetch", async (tripId, { rej
   }
 });
 
-export const sendMessage = createAsyncThunk("chat/send", async ({ tripId, body }, { rejectWithValue }) => {
-  try {
-    const { data } = await api.post(`/trips/${tripId}/messages`, { body });
-    return data.message;
-  } catch (err) {
-    return rejectWithValue(errMsg(err));
+export const sendMessage = createAsyncThunk(
+  "chat/send",
+  async ({ tripId, body }, { rejectWithValue }) => {
+    try {
+      const { data } = await api.post(`/trips/${tripId}/messages`, { body });
+      return data.message;
+    } catch (err) {
+      return rejectWithValue(errMsg(err));
+    }
   }
-});
+);
 
 const chatSlice = createSlice({
   name: "chat",
@@ -37,9 +40,18 @@ const chatSlice = createSlice({
   },
   extraReducers: (builder) => {
     builder
-      .addCase(fetchMessages.pending, (state) => { state.status = "loading"; state.error = null; })
-      .addCase(fetchMessages.fulfilled, (state, { payload }) => { state.status = "succeeded"; state.messages = payload; })
-      .addCase(fetchMessages.rejected, (state, { payload }) => { state.status = "failed"; state.error = payload; })
+      .addCase(fetchMessages.pending, (state) => {
+        state.status = "loading";
+        state.error = null;
+      })
+      .addCase(fetchMessages.fulfilled, (state, { payload }) => {
+        state.status = "succeeded";
+        state.messages = payload;
+      })
+      .addCase(fetchMessages.rejected, (state, { payload }) => {
+        state.status = "failed";
+        state.error = payload;
+      })
       .addCase(sendMessage.fulfilled, (state, { payload }) => {
         if (!state.messages.some((m) => m._id === payload._id)) state.messages.push(payload);
       });

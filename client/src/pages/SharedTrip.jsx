@@ -12,7 +12,8 @@ export default function SharedTrip() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    api.get(`/safety/share/${token}`)
+    api
+      .get(`/safety/share/${token}`)
       .then(({ data }) => setTrip(data.trip))
       .catch((e) => setError(e.response?.data?.message || "This link is invalid or has expired."))
       .finally(() => setLoading(false));
@@ -22,29 +23,60 @@ export default function SharedTrip() {
 
   return (
     <div className="page" style={{ maxWidth: 560, margin: "0 auto" }}>
-      <header className="page-head"><div><p className="eyebrow">CampusPool</p><h1>Trip status</h1></div></header>
+      <header className="page-head">
+        <div>
+          <p className="eyebrow">CampusPool</p>
+          <h1>Trip status</h1>
+        </div>
+      </header>
       {error ? (
         <div className="alert error">{error}</div>
       ) : (
         <section className="panel">
           <div className="detail-grid">
-            <div><small>Host</small><strong>{trip.host}</strong></div>
-            <div><small>Status</small><strong style={{ textTransform: "capitalize" }}>{trip.status?.replace(/_/g, " ")}</strong></div>
-            <div><small>From</small><strong>{trip.pickup}</strong></div>
-            <div><small>To</small><strong>{trip.destination}</strong></div>
-            <div><small>Departure</small><strong>{trip.departureTime ? new Date(trip.departureTime).toLocaleString() : "—"}</strong></div>
+            <div>
+              <small>Host</small>
+              <strong>{trip.host}</strong>
+            </div>
+            <div>
+              <small>Status</small>
+              <strong style={{ textTransform: "capitalize" }}>
+                {trip.status?.replace(/_/g, " ")}
+              </strong>
+            </div>
+            <div>
+              <small>From</small>
+              <strong>{trip.pickup}</strong>
+            </div>
+            <div>
+              <small>To</small>
+              <strong>{trip.destination}</strong>
+            </div>
+            <div>
+              <small>Departure</small>
+              <strong>
+                {trip.departureTime ? new Date(trip.departureTime).toLocaleString() : "—"}
+              </strong>
+            </div>
             <div>
               <small>Safe arrival</small>
-              <strong>{trip.arrivalConfirmedAt ? `Confirmed ${new Date(trip.arrivalConfirmedAt).toLocaleTimeString()}` : "Not yet"}</strong>
+              <strong>
+                {trip.arrivalConfirmedAt
+                  ? `Confirmed ${new Date(trip.arrivalConfirmedAt).toLocaleTimeString()}`
+                  : "Not yet"}
+              </strong>
             </div>
           </div>
           {trip.lastKnownLocation && (
             <p className="muted-text">
-              Last shared location: {trip.lastKnownLocation[1]?.toFixed(4)}, {trip.lastKnownLocation[0]?.toFixed(4)}
+              Last shared location: {trip.lastKnownLocation[1]?.toFixed(4)},{" "}
+              {trip.lastKnownLocation[0]?.toFixed(4)}
               {trip.lastCheckInAt ? ` · ${new Date(trip.lastCheckInAt).toLocaleTimeString()}` : ""}
             </p>
           )}
-          <small className="muted-text">This is a temporary, read-only view shared by a trip member.</small>
+          <small className="muted-text">
+            This is a temporary, read-only view shared by a trip member.
+          </small>
         </section>
       )}
     </div>

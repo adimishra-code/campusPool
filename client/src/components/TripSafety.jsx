@@ -22,7 +22,11 @@ export default function TripSafety({ tripId, onLiveLocation, members = [] }) {
   const [arrived, setArrived] = useState(false);
   const [shareUrl, setShareUrl] = useState(null);
   const [reportOpen, setReportOpen] = useState(false);
-  const [report, setReport] = useState({ reportedUser: "", category: "harassment", description: "" });
+  const [report, setReport] = useState({
+    reportedUser: "",
+    category: "harassment",
+    description: ""
+  });
   const [reportMsg, setReportMsg] = useState(null);
   const socketRef = useRef(null);
   const watchRef = useRef(null);
@@ -32,8 +36,12 @@ export default function TripSafety({ tripId, onLiveLocation, members = [] }) {
     socketRef.current = socket;
     socket.emit("chat:join", { tripId });
 
-    const onLoc = (p) => { if (p.tripId === String(tripId) && onLiveLocation) onLiveLocation(p.coordinates); };
-    const onSos = (a) => { if (a.trip === String(tripId)) setIncomingSos(a); };
+    const onLoc = (p) => {
+      if (p.tripId === String(tripId) && onLiveLocation) onLiveLocation(p.coordinates);
+    };
+    const onSos = (a) => {
+      if (a.trip === String(tripId)) setIncomingSos(a);
+    };
     socket.on("trip:location", onLoc);
     socket.on("sos:alert", onSos);
 
@@ -49,7 +57,10 @@ export default function TripSafety({ tripId, onLiveLocation, members = [] }) {
     if (!window.confirm("Send an SOS to your trip members and campus operations?")) return;
     setSosState("sending");
     const post = (location) =>
-      api.post(`/trips/${tripId}/sos`, { location }).then(() => setSosState("sent")).catch(() => setSosState("idle"));
+      api
+        .post(`/trips/${tripId}/sos`, { location })
+        .then(() => setSosState("sent"))
+        .catch(() => setSosState("idle"));
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
         (pos) => post([pos.coords.longitude, pos.coords.latitude]),
@@ -68,7 +79,11 @@ export default function TripSafety({ tripId, onLiveLocation, members = [] }) {
       return;
     }
     watchRef.current = navigator.geolocation.watchPosition(
-      (pos) => socketRef.current?.emit("trip:location", { tripId, coordinates: [pos.coords.longitude, pos.coords.latitude] }),
+      (pos) =>
+        socketRef.current?.emit("trip:location", {
+          tripId,
+          coordinates: [pos.coords.longitude, pos.coords.latitude]
+        }),
       () => {},
       { enableHighAccuracy: true, maximumAge: 5000 }
     );
@@ -76,7 +91,11 @@ export default function TripSafety({ tripId, onLiveLocation, members = [] }) {
   };
 
   const checkIn = () => {
-    const post = (location) => api.post(`/trips/${tripId}/check-in`, { location }).then(() => setCheckedIn(true)).catch(() => {});
+    const post = (location) =>
+      api
+        .post(`/trips/${tripId}/check-in`, { location })
+        .then(() => setCheckedIn(true))
+        .catch(() => {});
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
         (pos) => post([pos.coords.longitude, pos.coords.latitude]),
@@ -87,21 +106,32 @@ export default function TripSafety({ tripId, onLiveLocation, members = [] }) {
   };
 
   const confirmArrival = () => {
-    api.post(`/trips/${tripId}/confirm-arrival`).then(() => setArrived(true)).catch(() => {});
+    api
+      .post(`/trips/${tripId}/confirm-arrival`)
+      .then(() => setArrived(true))
+      .catch(() => {});
   };
 
   const createShareLink = () => {
-    api.post(`/trips/${tripId}/share`).then(({ data }) => {
-      setShareUrl(data.url);
-      navigator.clipboard?.writeText(data.url).catch(() => {});
-    }).catch(() => {});
+    api
+      .post(`/trips/${tripId}/share`)
+      .then(({ data }) => {
+        setShareUrl(data.url);
+        navigator.clipboard?.writeText(data.url).catch(() => {});
+      })
+      .catch(() => {});
   };
 
   const submitReport = (e) => {
     e.preventDefault();
     setReportMsg(null);
-    api.post("/safety/reports", { ...report, trip: tripId })
-      .then(() => { setReportMsg("Report submitted. Operations will review it."); setReport({ reportedUser: "", category: "harassment", description: "" }); setReportOpen(false); })
+    api
+      .post("/safety/reports", { ...report, trip: tripId })
+      .then(() => {
+        setReportMsg("Report submitted. Operations will review it.");
+        setReport({ reportedUser: "", category: "harassment", description: "" });
+        setReportOpen(false);
+      })
       .catch((err) => setReportMsg(err.response?.data?.message || "Could not submit report"));
   };
 
@@ -109,7 +139,9 @@ export default function TripSafety({ tripId, onLiveLocation, members = [] }) {
     <section className="panel safety-panel">
       <p className="eyebrow">Safety</p>
       {incomingSos && (
-        <div className="alert error sos-banner">🚨 {incomingSos.user?.name || "A member"} raised an SOS on this trip.</div>
+        <div className="alert error sos-banner">
+          🚨 {incomingSos.user?.name || "A member"} raised an SOS on this trip.
+        </div>
       )}
       <div className="button-row">
         <button className="danger sos-btn" onClick={sendSos} disabled={sosState !== "idle"}>
@@ -124,35 +156,67 @@ export default function TripSafety({ tripId, onLiveLocation, members = [] }) {
         <button className="secondary" onClick={confirmArrival} disabled={arrived}>
           {arrived ? "Arrival confirmed ✓" : "Confirm safe arrival"}
         </button>
-        <button className="secondary" onClick={createShareLink}>Share trip link</button>
+        <button className="secondary" onClick={createShareLink}>
+          Share trip link
+        </button>
         {members.length > 0 && (
-          <button className="secondary" onClick={() => setReportOpen((v) => !v)}>Report a member</button>
+          <button className="secondary" onClick={() => setReportOpen((v) => !v)}>
+            Report a member
+          </button>
         )}
       </div>
 
       {shareUrl && (
-        <small className="muted-text">Share link (copied, expires automatically): <a href={shareUrl} target="_blank" rel="noreferrer">{shareUrl}</a></small>
+        <small className="muted-text">
+          Share link (copied, expires automatically):{" "}
+          <a href={shareUrl} target="_blank" rel="noreferrer">
+            {shareUrl}
+          </a>
+        </small>
       )}
 
       {reportOpen && (
         <form className="report-form" onSubmit={submitReport}>
-          <select value={report.reportedUser} onChange={(e) => setReport({ ...report, reportedUser: e.target.value })} required>
+          <select
+            value={report.reportedUser}
+            onChange={(e) => setReport({ ...report, reportedUser: e.target.value })}
+            required
+          >
             <option value="">Select member…</option>
-            {members.map((m) => <option key={m.id} value={m.id}>{m.name}</option>)}
+            {members.map((m) => (
+              <option key={m.id} value={m.id}>
+                {m.name}
+              </option>
+            ))}
           </select>
-          <select value={report.category} onChange={(e) => setReport({ ...report, category: e.target.value })}>
-            {REPORT_CATEGORIES.map((c) => <option key={c.value} value={c.value}>{c.label}</option>)}
+          <select
+            value={report.category}
+            onChange={(e) => setReport({ ...report, category: e.target.value })}
+          >
+            {REPORT_CATEGORIES.map((c) => (
+              <option key={c.value} value={c.value}>
+                {c.label}
+              </option>
+            ))}
           </select>
           <textarea
-            placeholder="What happened?" minLength={5} maxLength={1000} required
-            value={report.description} onChange={(e) => setReport({ ...report, description: e.target.value })}
+            placeholder="What happened?"
+            minLength={5}
+            maxLength={1000}
+            required
+            value={report.description}
+            onChange={(e) => setReport({ ...report, description: e.target.value })}
           />
-          <button className="primary sm" type="submit">Submit report</button>
+          <button className="primary sm" type="submit">
+            Submit report
+          </button>
         </form>
       )}
       {reportMsg && <div className="alert info">{reportMsg}</div>}
 
-      <small className="muted-text">SOS alerts trip members, campus operations, and your emergency contacts.</small>
+      <small className="muted-text">
+        SOS alerts trip members, campus operations, and your emergency contacts.
+      </small>
     </section>
   );
 }

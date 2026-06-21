@@ -21,8 +21,13 @@ export default function ReportBug() {
       appVersion: import.meta.env.VITE_APP_VERSION || "dev"
     };
     try {
-      await api.post("/support", { subject: form.subject, message: form.message, category: "bug", meta });
-      trackEvent("bug_report", { });
+      await api.post("/support", {
+        subject: form.subject,
+        message: form.message,
+        category: "bug",
+        meta
+      });
+      trackEvent("bug_report", {});
       setState({ sending: false, ok: true, error: null });
       setForm({ subject: "", message: "" });
     } catch (err) {
@@ -30,33 +35,55 @@ export default function ReportBug() {
       setState({
         sending: false,
         ok: false,
-        error: status === 401
-          ? `Please sign in to file a bug report, or email us at ${SUPPORT_EMAIL}.`
-          : (err.response?.data?.message || "Could not send. Please try again or email us directly.")
+        error:
+          status === 401
+            ? `Please sign in to file a bug report, or email us at ${SUPPORT_EMAIL}.`
+            : err.response?.data?.message ||
+              "Could not send. Please try again or email us directly."
       });
     }
   };
 
   return (
-    <PublicLayout title="Report a bug" description="Found something broken? Tell the CampusPool team." seoPath="/report-bug">
+    <PublicLayout
+      title="Report a bug"
+      description="Found something broken? Tell the CampusPool team."
+      seoPath="/report-bug"
+    >
       <div className="support-page">
         <h1>Report a bug</h1>
         <p className="muted-text">
-          Help us squash it. Describe what happened and how to reproduce it — we auto-attach your browser and
-          screen details. You can also email <a href={`mailto:${SUPPORT_EMAIL}`}>{SUPPORT_EMAIL}</a>.
+          Help us squash it. Describe what happened and how to reproduce it — we auto-attach your
+          browser and screen details. You can also email{" "}
+          <a href={`mailto:${SUPPORT_EMAIL}`}>{SUPPORT_EMAIL}</a>.
         </p>
 
-        {state.ok && <div className="alert info">Thanks for the report! We'll look into it and follow up by email.</div>}
+        {state.ok && (
+          <div className="alert info">
+            Thanks for the report! We'll look into it and follow up by email.
+          </div>
+        )}
         {state.error && <div className="alert error">{state.error}</div>}
 
         <form className="panel form-grid" onSubmit={submit}>
           <label className="field" style={{ gridColumn: "1 / -1" }}>
             <span>What went wrong?</span>
-            <input value={form.subject} onChange={set("subject")} placeholder="e.g. Can't join a trip from the feed" maxLength={160} />
+            <input
+              value={form.subject}
+              onChange={set("subject")}
+              placeholder="e.g. Can't join a trip from the feed"
+              maxLength={160}
+            />
           </label>
           <label className="field" style={{ gridColumn: "1 / -1" }}>
             <span>Steps to reproduce / details</span>
-            <textarea rows={7} value={form.message} onChange={set("message")} placeholder={"1. Go to…\n2. Tap…\n3. Expected … but saw …"} maxLength={5000} />
+            <textarea
+              rows={7}
+              value={form.message}
+              onChange={set("message")}
+              placeholder={"1. Go to…\n2. Tap…\n3. Expected … but saw …"}
+              maxLength={5000}
+            />
           </label>
           <div className="field" style={{ alignSelf: "end" }}>
             <button className="primary" type="submit" disabled={state.sending}>

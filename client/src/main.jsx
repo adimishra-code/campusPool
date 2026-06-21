@@ -5,6 +5,7 @@ import { BrowserRouter } from "react-router-dom";
 import { HelmetProvider } from "react-helmet-async";
 import App from "./App.jsx";
 import CookieConsent from "./components/CookieConsent.jsx";
+import ErrorBoundary from "./components/ErrorBoundary.jsx";
 import { store } from "./store/store.js";
 import "./styles.css";
 
@@ -13,8 +14,10 @@ createRoot(document.getElementById("root")).render(
     <Provider store={store}>
       <HelmetProvider>
         <BrowserRouter>
-          <App />
-          <CookieConsent />
+          <ErrorBoundary>
+            <App />
+            <CookieConsent />
+          </ErrorBoundary>
         </BrowserRouter>
       </HelmetProvider>
     </Provider>

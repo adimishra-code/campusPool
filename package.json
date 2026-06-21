@@ -1,9 +1,9 @@
 {
-  "name": "mern-uber-clone",
+  "name": "campuspool",
   "version": "1.0.0",
   "private": true,
   "type": "module",
-  "description": "Production-grade Uber clone architecture using MongoDB, Express, React, Node.js, Redux Toolkit, and Socket.IO.",
+  "description": "CampusPool — a production-grade MERN campus ride-sharing platform (MongoDB, Express, React, Node.js, Redux Toolkit, Socket.IO).",
   "scripts": {
     "dev": "concurrently \"npm run dev --prefix server\" \"npm run dev --prefix client\"",
     "server": "npm run dev --prefix server",
@@ -23,5 +23,8 @@
     "eslint-plugin-react-hooks": "^7.1.1",
     "globals": "^17.6.0",
     "prettier": "^3.8.4"
+  },
+  "dependencies": {
+    "marked": "^9.1.6"
   }
 }

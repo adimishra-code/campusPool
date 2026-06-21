@@ -30,7 +30,14 @@ const VERIFICATION_LABEL = {
 };
 
 function initials(name = "") {
-  return name.trim().split(/\s+/).slice(0, 2).map((p) => p[0]?.toUpperCase()).join("") || "?";
+  return (
+    name
+      .trim()
+      .split(/\s+/)
+      .slice(0, 2)
+      .map((p) => p[0]?.toUpperCase())
+      .join("") || "?"
+  );
 }
 
 export default function AppShell() {
@@ -42,23 +49,32 @@ export default function AppShell() {
   const [menuOpen, setMenuOpen] = useState(false);
 
   // Keep profile/verification badge fresh on shell mount.
-  useEffect(() => { dispatch(fetchMe()); }, [dispatch]);
+  useEffect(() => {
+    dispatch(fetchMe());
+  }, [dispatch]);
 
   // Collapse the mobile sheet whenever the route changes.
-  useEffect(() => { setMenuOpen(false); }, [location.pathname]);
+  useEffect(() => {
+    setMenuOpen(false);
+  }, [location.pathname]);
 
   const badge = VERIFICATION_LABEL[user?.verificationStatus] || VERIFICATION_LABEL.unverified;
-  const navItems = user?.role === "admin"
-    ? [...NAV,
-        { to: "/admin/verifications", label: "Admin", icon: "admin" },
-        { to: "/admin/safety", label: "Safety", icon: "safety" }]
-    : NAV;
+  const navItems =
+    user?.role === "admin"
+      ? [
+          ...NAV,
+          { to: "/admin/verifications", label: "Admin", icon: "admin" },
+          { to: "/admin/safety", label: "Safety", icon: "safety" }
+        ]
+      : NAV;
   const overflowItems = navItems.filter((item) => !PRIMARY.has(item.to));
 
   const accountBlock = (
     <div className="account-card">
       <div className="account-head">
-        <span className="avatar" aria-hidden>{initials(user?.name)}</span>
+        <span className="avatar" aria-hidden>
+          {initials(user?.name)}
+        </span>
         <div>
           <strong>{user?.name || "Student"}</strong>
           <small className="role-line">
@@ -72,7 +88,12 @@ export default function AppShell() {
           <Icon name={mode === "light" ? "moon" : "sun"} size={16} />
           {mode === "light" ? "Dark" : "Light"} mode
         </button>
-        <button onClick={() => { dispatch(notificationsReset()); dispatch(logoutUser()); }}>
+        <button
+          onClick={() => {
+            dispatch(notificationsReset());
+            dispatch(logoutUser());
+          }}
+        >
           <Icon name="logout" size={16} />
           Logout
         </button>
@@ -115,7 +136,9 @@ export default function AppShell() {
         <nav>
           {navItems.map((item) => (
             <NavLink key={item.to} to={item.to}>
-              <span className="nav-icon" aria-hidden><Icon name={item.icon} size={19} /></span>
+              <span className="nav-icon" aria-hidden>
+                <Icon name={item.icon} size={19} />
+              </span>
               {item.label}
             </NavLink>
           ))}
@@ -136,7 +159,9 @@ export default function AppShell() {
         <nav className="sheet-nav">
           {overflowItems.map((item) => (
             <NavLink key={item.to} to={item.to} className="sheet-nav-link">
-              <span className="nav-icon" aria-hidden><Icon name={item.icon} size={20} /></span>
+              <span className="nav-icon" aria-hidden>
+                <Icon name={item.icon} size={20} />
+              </span>
               {item.label}
             </NavLink>
           ))}

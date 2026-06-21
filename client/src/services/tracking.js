@@ -22,7 +22,7 @@ function send(type, { path, meta } = {}) {
   if (!hasAnalyticsConsent()) return;
   const payload = {
     type,
-    path: path || (window.location.pathname + window.location.search),
+    path: path || window.location.pathname + window.location.search,
     referrer: document.referrer || undefined,
     sessionId: getSessionId(),
     meta

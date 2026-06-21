@@ -1,10 +1,5 @@
 import { Router } from "express";
-import {
-  dashboard,
-  listUsers,
-  listTrips,
-  refundPayment
-} from "../controllers/admin.controller.js";
+import { dashboard, listUsers, listTrips, refundPayment } from "../controllers/admin.controller.js";
 import { authorize, protect } from "../middleware/auth.middleware.js";
 
 const router = Router();

@@ -31,16 +31,46 @@ router.post("/college-email/otp", protect, validate(otpRequestRules), requestCol
 router.post("/college-email/verify", protect, validate(otpVerifyRules), verifyCollegeEmail);
 
 // Document uploads (multipart field name: "document")
-router.post("/upload/student-id", protect, uploadSingle("document"), validate(studentIdRules), uploadStudentId);
-router.post("/upload/college-id", protect, uploadSingle("document"), validate(collegeIdRules), uploadCollegeId);
-router.post("/upload/vehicle", protect, uploadSingle("document"), validate(vehicleDocRules), uploadVehicleDocument);
+router.post(
+  "/upload/student-id",
+  protect,
+  uploadSingle("document"),
+  validate(studentIdRules),
+  uploadStudentId
+);
+router.post(
+  "/upload/college-id",
+  protect,
+  uploadSingle("document"),
+  validate(collegeIdRules),
+  uploadCollegeId
+);
+router.post(
+  "/upload/vehicle",
+  protect,
+  uploadSingle("document"),
+  validate(vehicleDocRules),
+  uploadVehicleDocument
+);
 
 // Secure document streaming (owner or admin only)
 router.get("/document/:fileId", protect, getDocument);
 
 // Admin queues + decisions
 router.get("/admin/pending", protect, authorize("admin"), getPendingVerifications);
-router.patch("/admin/:id/approve", protect, authorize("admin"), validate(verificationIdRule), approveVerification);
-router.patch("/admin/:id/reject", protect, authorize("admin"), validate(verificationIdRule), rejectVerification);
+router.patch(
+  "/admin/:id/approve",
+  protect,
+  authorize("admin"),
+  validate(verificationIdRule),
+  approveVerification
+);
+router.patch(
+  "/admin/:id/reject",
+  protect,
+  authorize("admin"),
+  validate(verificationIdRule),
+  rejectVerification
+);
 
 export default router;

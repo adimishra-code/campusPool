@@ -13,7 +13,7 @@ export const env = {
   nodeEnv: process.env.NODE_ENV || "development",
   port: Number(process.env.PORT || 5000),
   clientUrl: process.env.CLIENT_URL || "http://localhost:5173",
-  mongoUri: process.env.MONGO_URI || "mongodb://127.0.0.1:27017/uber_clone",
+  mongoUri: process.env.MONGO_URI || "mongodb://127.0.0.1:27017/campuspool",
   // In production there is no fallback — a missing JWT_SECRET leaves this empty
   // and assertRequiredSecrets() throws before the server accepts traffic.
   jwtSecret: process.env.JWT_SECRET || (isProduction ? "" : DEV_JWT_SECRET),
@@ -39,26 +39,28 @@ export const env = {
   // both client id and secret are present, so dev/tests are unaffected.
   googleClientId: process.env.GOOGLE_CLIENT_ID || "",
   googleClientSecret: process.env.GOOGLE_CLIENT_SECRET || "",
-  googleCallbackUrl: process.env.GOOGLE_CALLBACK_URL || "http://localhost:5000/api/auth/google/callback",
+  googleCallbackUrl:
+    process.env.GOOGLE_CALLBACK_URL || "http://localhost:5000/api/auth/google/callback",
   get googleOAuthConfigured() {
     return Boolean(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET);
   },
-  razorpayKeyId: process.env.RAZORPAY_KEY_ID || "",
-  razorpayKeySecret: process.env.RAZORPAY_KEY_SECRET || "",
-  razorpayWebhookSecret: process.env.RAZORPAY_WEBHOOK_SECRET || "",
   // Twilio SMS (optional) — SOS / safety alerts to emergency contacts.
   twilioAccountSid: process.env.TWILIO_ACCOUNT_SID || "",
   twilioAuthToken: process.env.TWILIO_AUTH_TOKEN || "",
   twilioFromNumber: process.env.TWILIO_FROM_NUMBER || "",
   get smsConfigured() {
-    return Boolean(process.env.TWILIO_ACCOUNT_SID && process.env.TWILIO_AUTH_TOKEN && process.env.TWILIO_FROM_NUMBER);
+    return Boolean(
+      process.env.TWILIO_ACCOUNT_SID &&
+      process.env.TWILIO_AUTH_TOKEN &&
+      process.env.TWILIO_FROM_NUMBER
+    );
   },
   // Safe-arrival escalation: grace period (minutes) after expected arrival, and
   // how often the scheduler runs (seconds).
   arrivalGraceMinutes: Number(process.env.ARRIVAL_GRACE_MINUTES || 15),
   arrivalScanIntervalSeconds: Number(process.env.ARRIVAL_SCAN_INTERVAL_SECONDS || 60),
   redisUrl: process.env.REDIS_URL || "redis://localhost:6379",
-  rateLimitRedisPrefix: process.env.RATE_LIMIT_REDIS_PREFIX || "uberclone:ratelimit",
+  rateLimitRedisPrefix: process.env.RATE_LIMIT_REDIS_PREFIX || "campuspool:ratelimit",
   // Max auth/OTP requests per IP per 15-min window (credential-stuffing guard).
   authRateLimit: Number(process.env.AUTH_RATE_LIMIT || 40),
   // Tighter per-IP caps layered on top of the per-account lockout & per-code
@@ -66,12 +68,7 @@ export const env = {
   loginRateLimit: Number(process.env.LOGIN_RATE_LIMIT || 10),
   passwordResetRateLimit: Number(process.env.PASSWORD_RESET_RATE_LIMIT || 5),
   otpVerifyRateLimit: Number(process.env.OTP_VERIFY_RATE_LIMIT || 10),
-  otpRequestRateLimit: Number(process.env.OTP_REQUEST_RATE_LIMIT || 5),
-  baseFare: Number(process.env.BASE_FARE || 45),
-  perKmRate: Number(process.env.PER_KM_RATE || 18),
-  perMinRate: Number(process.env.PER_MIN_RATE || 2.5),
-  surgeMultiplier: Number(process.env.SURGE_MULTIPLIER || 1.2),
-  driverRejectTimeoutSeconds: Number(process.env.DRIVER_REJECT_TIMEOUT_SECONDS || 25)
+  otpRequestRateLimit: Number(process.env.OTP_REQUEST_RATE_LIMIT || 5)
 };
 
 /**
@@ -88,6 +85,17 @@ export function assertRequiredSecrets() {
     problems.push("JWT_SECRET is required in production and must not be the dev default.");
   } else if (env.jwtSecret.length < 32) {
     problems.push("JWT_SECRET should be at least 32 characters of high-entropy randomness.");
+  }
+
+  // The auth cookie's CSRF defense is SameSite. SameSite=none disables that
+  // protection and is only safe when paired with CSRF tokens — which this app
+  // deliberately does not ship (it is designed for a same-site deploy). Refuse
+  // to boot in that combination rather than run cross-site without CSRF cover.
+  if (env.cookieSameSite === "none") {
+    problems.push(
+      "COOKIE_SAMESITE=none is not supported: this app relies on SameSite for CSRF protection " +
+        "and ships no CSRF tokens. Deploy the SPA and API same-site and use COOKIE_SAMESITE=lax."
+    );
   }
 
   if (problems.length) {

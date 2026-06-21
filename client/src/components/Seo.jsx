@@ -1,8 +1,10 @@
 import { Helmet } from "react-helmet-async";
 
 const SITE = "CampusPool";
-const DEFAULT_DESC = "Share verified student rides on your campus. Cheaper trips, greener commutes, and a network you can trust — built for students.";
-const ORIGIN = (typeof window !== "undefined" && window.location.origin) || "https://campuspool.app";
+const DEFAULT_DESC =
+  "Share verified student rides on your campus. Cheaper trips, greener commutes, and a network you can trust — built for students.";
+const ORIGIN =
+  (typeof window !== "undefined" && window.location.origin) || "https://campuspool.app";
 const SITE_VERIFICATION = import.meta.env.VITE_GOOGLE_SITE_VERIFICATION || "";
 
 // Per-route SEO: title, description, canonical, Open Graph + Twitter cards.

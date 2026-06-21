@@ -58,7 +58,9 @@ export async function runArrivalEscalation({ io, now = new Date() } = {}) {
     }
 
     // SMS the emergency contacts of every participant.
-    const contactPhones = participants.flatMap((u) => (u.emergencyContacts || []).map((c) => c.phone));
+    const contactPhones = participants.flatMap((u) =>
+      (u.emergencyContacts || []).map((c) => c.phone)
+    );
     await sendSmsBulk(
       contactPhones,
       `CampusPool safety alert: no safe-arrival confirmation for a trip (${route}). Please check in on them.`
@@ -76,7 +78,9 @@ export async function runArrivalEscalation({ io, now = new Date() } = {}) {
 export function startArrivalEscalationScheduler(io) {
   const intervalMs = env.arrivalScanIntervalSeconds * 1000;
   const timer = setInterval(() => {
-    runArrivalEscalation({ io }).catch((err) => console.error(`[escalation] pass failed: ${err.message}`));
+    runArrivalEscalation({ io }).catch((err) =>
+      console.error(`[escalation] pass failed: ${err.message}`)
+    );
   }, intervalMs);
   timer.unref?.();
   return timer;

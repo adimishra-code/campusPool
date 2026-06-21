@@ -1,5 +1,9 @@
 import { Router } from "express";
-import { analyticsOverview, safetyOverview, trackEvent } from "../controllers/analytics.controller.js";
+import {
+  analyticsOverview,
+  safetyOverview,
+  trackEvent
+} from "../controllers/analytics.controller.js";
 import { authorize, protect, optionalAuth } from "../middleware/auth.middleware.js";
 
 const router = Router();

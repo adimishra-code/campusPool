@@ -10,12 +10,24 @@ afterEach(clearTestDB);
 async function startedTrip() {
   const adminToken = await makeAdmin();
   const host = await makeVerifiedHost(adminToken);
-  await agent().post("/api/users/me/emergency-contacts").set(...bearer(host.token)).send({ name: "Mom", phone: "9876500000" });
+  await agent()
+    .post("/api/users/me/emergency-contacts")
+    .set(...bearer(host.token))
+    .send({ name: "Mom", phone: "9876500000" });
   const trip = (await offerTrip(host.token, host.vehicleId)).body.trip.id;
   const passenger = await register({ email: "esc-pax@univ.edu" });
-  await agent().post(`/api/trips/${trip}/join`).set(...bearer(passenger.body.token)).send({});
-  await agent().post(`/api/trips/${trip}/approve/${passenger.body.user.id}`).set(...bearer(host.token)).send({});
-  await agent().post(`/api/trips/${trip}/start`).set(...bearer(host.token)).send({});
+  await agent()
+    .post(`/api/trips/${trip}/join`)
+    .set(...bearer(passenger.body.token))
+    .send({});
+  await agent()
+    .post(`/api/trips/${trip}/approve/${passenger.body.user.id}`)
+    .set(...bearer(host.token))
+    .send({});
+  await agent()
+    .post(`/api/trips/${trip}/start`)
+    .set(...bearer(host.token))
+    .send({});
   return { host, passenger, trip };
 }
 
@@ -29,8 +41,12 @@ describe("Safe-arrival escalation", () => {
     const result = await runArrivalEscalation({ io: null, now: FUTURE });
     expect(result.escalated).toBe(1);
 
-    const notes = await agent().get("/api/notifications").set(...bearer(host.token));
-    expect(notes.body.notifications.some((n) => n.type === "sos" && /safe-arrival/i.test(n.title))).toBe(true);
+    const notes = await agent()
+      .get("/api/notifications")
+      .set(...bearer(host.token));
+    expect(
+      notes.body.notifications.some((n) => n.type === "sos" && /safe-arrival/i.test(n.title))
+    ).toBe(true);
 
     const fresh = await Trip.findById(trip);
     expect(fresh.safety.arrivalEscalatedAt).toBeTruthy();
@@ -46,7 +62,10 @@ describe("Safe-arrival escalation", () => {
 
   test("does not escalate when arrival was confirmed", async () => {
     const { host, trip } = await startedTrip();
-    await agent().post(`/api/trips/${trip}/confirm-arrival`).set(...bearer(host.token)).send({});
+    await agent()
+      .post(`/api/trips/${trip}/confirm-arrival`)
+      .set(...bearer(host.token))
+      .send({});
     const result = await runArrivalEscalation({ io: null, now: FUTURE });
     expect(result.escalated).toBe(0);
   });

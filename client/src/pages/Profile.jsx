@@ -12,8 +12,10 @@ function trustBadge(user) {
       ? { text: "Verified Host", tone: "ok" }
       : { text: "Verified Student", tone: "ok" };
   }
-  if (["pending", "partial"].includes(user?.verificationStatus)) return { text: "Pending Verification", tone: "warn" };
-  if (user?.verificationStatus === "rejected") return { text: "Verification Rejected", tone: "bad" };
+  if (["pending", "partial"].includes(user?.verificationStatus))
+    return { text: "Pending Verification", tone: "warn" };
+  if (user?.verificationStatus === "rejected")
+    return { text: "Verification Rejected", tone: "bad" };
   return { text: "Unverified", tone: "muted" };
 }
 
@@ -25,6 +27,7 @@ export default function Profile() {
   const [savedMsg, setSavedMsg] = useState(null);
   const [loaded, setLoaded] = useState(false);
   const [contact, setContact] = useState({ name: "", phone: "", relationship: "" });
+  const [contactMsg, setContactMsg] = useState(null);
   const [tfaBusy, setTfaBusy] = useState(false);
 
   useEffect(() => {
@@ -32,7 +35,8 @@ export default function Profile() {
   }, [dispatch]);
 
   useEffect(() => {
-    if (user) setForm({ name: user.name || "", hostel: user.hostel || "", upiId: user.upiId || "" });
+    if (user)
+      setForm({ name: user.name || "", hostel: user.hostel || "", upiId: user.upiId || "" });
   }, [user?.name, user?.hostel, user?.upiId]);
 
   if (!loaded && !user) return <Spinner label="Loading profile…" />;
@@ -43,14 +47,24 @@ export default function Profile() {
   const addContact = async (e) => {
     e.preventDefault();
     if (!contact.name.trim() || !contact.phone.trim()) return;
-    await api.post("/users/me/emergency-contacts", contact);
-    setContact({ name: "", phone: "", relationship: "" });
-    dispatch(fetchMe());
+    setContactMsg(null);
+    try {
+      await api.post("/users/me/emergency-contacts", contact);
+      setContact({ name: "", phone: "", relationship: "" });
+      dispatch(fetchMe());
+    } catch (err) {
+      setContactMsg(err.response?.data?.message || "Could not add contact");
+    }
   };
 
   const removeContact = async (id) => {
-    await api.delete(`/users/me/emergency-contacts/${id}`);
-    dispatch(fetchMe());
+    setContactMsg(null);
+    try {
+      await api.delete(`/users/me/emergency-contacts/${id}`);
+      dispatch(fetchMe());
+    } catch (err) {
+      setContactMsg(err.response?.data?.message || "Could not remove contact");
+    }
   };
 
   const toggle2fa = async () => {
@@ -58,14 +72,17 @@ export default function Profile() {
     try {
       await dispatch(setTwoFactor(!user?.twoFactorEnabled)).unwrap();
       await dispatch(fetchMe());
-    } catch { /* no-op */ } finally {
+    } catch {
+      /* no-op */
+    } finally {
       setTfaBusy(false);
     }
   };
 
   const save = async (e) => {
     e.preventDefault();
-    setSaving(true); setSavedMsg(null);
+    setSaving(true);
+    setSavedMsg(null);
     try {
       await api.patch("/users/me", { name: form.name, hostel: form.hostel, upiId: form.upiId });
       await dispatch(fetchMe());
@@ -79,12 +96,22 @@ export default function Profile() {
 
   return (
     <div className="page">
-      <header className="page-head"><div><p className="eyebrow">Account</p><h1>Profile</h1></div></header>
+      <header className="page-head">
+        <div>
+          <p className="eyebrow">Account</p>
+          <h1>Profile</h1>
+        </div>
+      </header>
 
       <section className="panel">
         <div className="profile-head">
           <span className="avatar xl" aria-hidden>
-            {(user?.name || "?").trim().split(/\s+/).slice(0, 2).map((p) => p[0]?.toUpperCase()).join("")}
+            {(user?.name || "?")
+              .trim()
+              .split(/\s+/)
+              .slice(0, 2)
+              .map((p) => p[0]?.toUpperCase())
+              .join("")}
           </span>
           <div>
             <h2 className="no-margin">{user?.name}</h2>
@@ -96,17 +123,39 @@ export default function Profile() {
         </div>
 
         <div className="detail-grid">
-          <div><small>Email</small><strong>{user?.email}</strong></div>
-          <div><small>Phone</small><strong>{user?.phone || "—"}</strong></div>
-          <div><small>Student ID</small><strong>{user?.studentId || "—"}</strong></div>
-          <div><small>Trust score</small><strong>{user?.trustScore ?? "—"}</strong></div>
-          <div><small>Safety score</small><strong>{user?.safetyScore ?? "—"}</strong></div>
-          {verification && <div><small>Verification</small><strong>{verification.progress ?? 0}% complete</strong></div>}
+          <div>
+            <small>Email</small>
+            <strong>{user?.email}</strong>
+          </div>
+          <div>
+            <small>Phone</small>
+            <strong>{user?.phone || "—"}</strong>
+          </div>
+          <div>
+            <small>Student ID</small>
+            <strong>{user?.studentId || "—"}</strong>
+          </div>
+          <div>
+            <small>Trust score</small>
+            <strong>{user?.trustScore ?? "—"}</strong>
+          </div>
+          <div>
+            <small>Safety score</small>
+            <strong>{user?.safetyScore ?? "—"}</strong>
+          </div>
+          {verification && (
+            <div>
+              <small>Verification</small>
+              <strong>{verification.progress ?? 0}% complete</strong>
+            </div>
+          )}
         </div>
         {!isVerified && (
           <div className="verify-cta">
             <span>Get your trust badge — verify your email and student ID.</span>
-            <Link className="primary" to="/verify">Verify now</Link>
+            <Link className="primary" to="/verify">
+              Verify now
+            </Link>
           </div>
         )}
       </section>
@@ -120,15 +169,27 @@ export default function Profile() {
           </label>
           <label className="field">
             <span>Hostel</span>
-            <input value={form.hostel} onChange={(e) => setForm({ ...form, hostel: e.target.value })} placeholder="Block A" />
+            <input
+              value={form.hostel}
+              onChange={(e) => setForm({ ...form, hostel: e.target.value })}
+              placeholder="Block A"
+            />
           </label>
           <label className="field">
             <span>UPI ID</span>
-            <input value={form.upiId} onChange={(e) => setForm({ ...form, upiId: e.target.value })} placeholder="name@bank" />
-            <small className="muted-text">Lets passengers pay you directly by QR when you host.</small>
+            <input
+              value={form.upiId}
+              onChange={(e) => setForm({ ...form, upiId: e.target.value })}
+              placeholder="name@bank"
+            />
+            <small className="muted-text">
+              Lets passengers pay you directly by QR when you host.
+            </small>
           </label>
           <div className="field" style={{ alignSelf: "end" }}>
-            <button className="primary" type="submit" disabled={saving}>{saving ? "Saving…" : "Save changes"}</button>
+            <button className="primary" type="submit" disabled={saving}>
+              {saving ? "Saving…" : "Save changes"}
+            </button>
           </div>
         </form>
         {savedMsg && <div className="alert info">{savedMsg}</div>}
@@ -163,19 +224,43 @@ export default function Profile() {
             <article key={c._id} className="queue-row">
               <div>
                 <strong>{c.name}</strong>
-                <small>{c.phone}{c.relationship ? ` · ${c.relationship}` : ""}</small>
+                <small>
+                  {c.phone}
+                  {c.relationship ? ` · ${c.relationship}` : ""}
+                </small>
               </div>
-              <button className="secondary sm" onClick={() => removeContact(c._id)}>Remove</button>
+              <button className="secondary sm" onClick={() => removeContact(c._id)}>
+                Remove
+              </button>
             </article>
           ))}
-          {(user?.emergencyContacts || []).length === 0 && <small className="muted-text">No contacts yet.</small>}
+          {(user?.emergencyContacts || []).length === 0 && (
+            <small className="muted-text">No contacts yet.</small>
+          )}
         </div>
         <form className="form-grid" onSubmit={addContact} style={{ marginTop: 12 }}>
-          <input placeholder="Name" value={contact.name} onChange={(e) => setContact({ ...contact, name: e.target.value })} required />
-          <input placeholder="Phone" value={contact.phone} onChange={(e) => setContact({ ...contact, phone: e.target.value })} required />
-          <input placeholder="Relationship (optional)" value={contact.relationship} onChange={(e) => setContact({ ...contact, relationship: e.target.value })} />
-          <button className="primary" type="submit">Add contact</button>
+          <input
+            placeholder="Name"
+            value={contact.name}
+            onChange={(e) => setContact({ ...contact, name: e.target.value })}
+            required
+          />
+          <input
+            placeholder="Phone"
+            value={contact.phone}
+            onChange={(e) => setContact({ ...contact, phone: e.target.value })}
+            required
+          />
+          <input
+            placeholder="Relationship (optional)"
+            value={contact.relationship}
+            onChange={(e) => setContact({ ...contact, relationship: e.target.value })}
+          />
+          <button className="primary" type="submit">
+            Add contact
+          </button>
         </form>
+        {contactMsg && <div className="alert info">{contactMsg}</div>}
       </section>
     </div>
   );

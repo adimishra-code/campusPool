@@ -1,7 +1,7 @@
 ﻿import express from "express";
-import { 
+import {
   getUser,
-  updateProfile, 
+  updateProfile,
   updatePreferences,
   getUserTrips,
   getTrustScore,

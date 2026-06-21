@@ -21,7 +21,9 @@ export function putFile({ buffer, filename, contentType, metadata }) {
 
 export async function getFileInfo(fileId) {
   if (!ObjectId.isValid(fileId)) return null;
-  const files = await getBucket().find({ _id: new ObjectId(fileId) }).toArray();
+  const files = await getBucket()
+    .find({ _id: new ObjectId(fileId) })
+    .toArray();
   return files[0] || null;
 }
 

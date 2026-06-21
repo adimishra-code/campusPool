@@ -1,6 +1,11 @@
 import { query } from "express-validator";
 import { asyncHandler } from "../utils/asyncHandler.js";
-import { distanceMatrix, geocodeAddress, reverseGeocode, routeDirections } from "../services/googleMaps.service.js";
+import {
+  distanceMatrix,
+  geocodeAddress,
+  reverseGeocode,
+  routeDirections
+} from "../services/googleMaps.service.js";
 
 export const geocodeRules = [query("address").trim().notEmpty()];
 

@@ -12,58 +12,66 @@ secrets that can't be created for you.
 
 ## 0. Architecture
 
-| Component | What it is | Default port |
-|-----------|------------|--------------|
-| `api`   | Express + Socket.IO server (`server/`) | 5000 |
-| `web`   | React SPA built by Vite, served by nginx (`client/`) | 80 (8080 on host) |
-| `mongo` | MongoDB (use **Atlas** in prod instead of the bundled container) | 27017 |
-| `redis` | Distributed rate-limit store | 6379 |
+| Component | What it is                                                       | Default port      |
+| --------- | ---------------------------------------------------------------- | ----------------- |
+| `api`     | Express + Socket.IO server (`server/`)                           | 5000              |
+| `web`     | React SPA built by Vite, served by nginx (`client/`)             | 80 (8080 on host) |
+| `mongo`   | MongoDB (use **Atlas** in prod instead of the bundled container) | 27017             |
+| `redis`   | Distributed rate-limit store                                     | 6379              |
 
 The JWT session is delivered as an **httpOnly cookie**. For that cookie to be
 sent, the browser must treat the frontend and API as compatible origins:
 
 - **Same registrable domain** (e.g. `app.example.com` + `api.example.com`):
-  keep `COOKIE_SAMESITE=lax`. ✅ Recommended.
-- **Different domains** (e.g. frontend on Vercel, API on Render): set
-  `COOKIE_SAMESITE=none` (HTTPS required). See the **Cross-site** note at the end.
+  keep `COOKIE_SAMESITE=lax`. ✅ Required — this is the only supported topology.
+- **Different domains** are **not supported**: `SameSite` is the app's CSRF
+  defense and it ships no CSRF tokens, so the server **refuses to boot** in
+  production when `COOKIE_SAMESITE=none`. See the **Cross-site** note at the end.
 
 ---
 
 ## 1. Provision third-party services
 
 ### MongoDB Atlas (required)
+
 1. Create a free/shared cluster at <https://cloud.mongodb.com>.
 2. Database Access → add a user with a strong password.
 3. Network Access → allow your host's IP (or `0.0.0.0/0` if behind a trusted proxy).
 4. Copy the **SRV connection string** → `MONGO_URI`.
 
 ### Redis (required for multi-replica rate limiting)
+
 - Use a managed Redis (Upstash, Redis Cloud, Render Redis, etc.) or the bundled
   `redis` service. Put the URL in `REDIS_URL`. If you run a single API instance
   you can omit it — limiting falls back to in-memory.
 
 ### SMTP email (required for real signups)
+
 - Without SMTP, verification OTPs are never sent (and never echoed in prod), so
   users can't verify their email. Use any provider (SES, SendGrid, Mailgun,
   Postmark, Gmail App Password) and set `SMTP_*` + `SMTP_FROM`.
 
 ### Google OAuth (optional)
+
 1. <https://console.cloud.google.com> → APIs & Services → Credentials → OAuth client (Web).
 2. Authorized redirect URI: `https://api.your-domain.com/api/auth/google/callback`.
 3. Set `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GOOGLE_CALLBACK_URL`, and on
    the client `VITE_GOOGLE_OAUTH_ENABLED=true`.
 
 ### Google Maps (optional)
+
 - Enable Geocoding, Directions, Distance Matrix and Maps JavaScript APIs; create
   a key. Server key → `GOOGLE_MAPS_API_KEY`; browser key → `VITE_GOOGLE_MAPS_API_KEY`
   (restrict it by HTTP referrer). Without a key the API returns 503 for map calls
   and the SPA shows a styled fallback.
 
-### Razorpay (optional, live payments)
-- From the Razorpay dashboard (live mode) set `RAZORPAY_KEY_ID`,
-  `RAZORPAY_KEY_SECRET`, `RAZORPAY_WEBHOOK_SECRET`.
+### Payments
+
+- Settlement is peer-to-peer between students (cash, or the host's UPI QR/intent).
+  There is no payment gateway to configure — hosts add their own UPI VPA in-app.
 
 ### Twilio (optional, SOS SMS)
+
 - Set `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_FROM_NUMBER`.
 
 ---
@@ -90,7 +98,7 @@ docker compose ps             # all services healthy?
 docker compose logs -f api
 ```
 
-- Frontend: `http://<host>:8080`  ·  API: `http://<host>:5000`
+- Frontend: `http://<host>:8080` · API: `http://<host>:5000`
 - Put a TLS-terminating reverse proxy (Caddy/Traefik/nginx) in front for HTTPS,
   or use the managed-host path below. **Production must be HTTPS** — the auth
   cookie is `Secure` in production and won't be sent over plain HTTP.
@@ -102,14 +110,18 @@ The bundled `mongo`/`redis` services are convenient but for real workloads point
 ## 3b. Deploy to managed hosts (split)
 
 **Backend** (Render / Railway / Fly.io):
+
 - Build context `server/`, start `npm start`, health check `GET /health`.
 - Set all server env vars from your `.env`. Add a managed Redis add-on and wire
   `REDIS_URL`.
 
 **Frontend** (Vercel / Netlify / Cloudflare Pages):
+
 - Root `client/`, build `npm run build`, output `dist/`.
 - Set `VITE_API_URL`, `VITE_SOCKET_URL` (your API origin), and any maps/OAuth vars.
-- If the API is on a different domain, set the API's `COOKIE_SAMESITE=none`.
+- Serve the SPA and API on the **same registrable domain** (e.g. via a path/subdomain
+  reverse-proxy) so the `lax` auth cookie is sent. Split-domain (`SameSite=none`) is
+  not supported — see the Cross-site note.
 
 ---
 
@@ -137,8 +149,10 @@ Add your registry/host secrets and enable it when ready.
 ## Cross-site (different domains) — CSRF note
 
 `SameSite` is the app's CSRF defense, and it only works when the frontend and API
-share a registrable domain. If you must split them across domains
-(`COOKIE_SAMESITE=none`), the cookie becomes sendable cross-site and you should
-add CSRF protection (a double-submit token or an `Origin`/`Referer` allowlist on
-state-changing routes) before going live. Keeping both on one domain avoids this
-entirely and is the recommended setup.
+share a registrable domain. The app ships **no** CSRF tokens by design, so to
+prevent an unsafe deploy the server **refuses to start** in production when
+`COOKIE_SAMESITE=none` (see `assertRequiredSecrets()` in `server/src/config/env.js`).
+Keep both the SPA and API on one registrable domain and use `COOKIE_SAMESITE=lax`.
+If you ever genuinely need split domains, you must first add CSRF protection
+(a double-submit token or an `Origin`/`Referer` allowlist on state-changing routes)
+and relax that boot guard.

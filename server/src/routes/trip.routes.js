@@ -1,5 +1,5 @@
 ﻿import express from "express";
-import { 
+import {
   estimateTrip,
   offerTrip,
   findTrips,
@@ -13,6 +13,7 @@ import {
   completeTrip,
   getMyTrips,
   updateTripStatus,
+  tripStatusRules,
   offerTripRules,
   tripIdRule,
   findTripsRules,
@@ -22,8 +23,19 @@ import {
   trackRecommendationClick
 } from "../controllers/trip.controller.js";
 import { listMessages, sendMessage, sendMessageRules } from "../controllers/chat.controller.js";
-import { triggerSos, sosRules, checkIn, checkInRules, confirmArrival, createShareLink } from "../controllers/safety.controller.js";
-import { getTripPaymentInfo, settleTripShare, settleRules } from "../controllers/payment.controller.js";
+import {
+  triggerSos,
+  sosRules,
+  checkIn,
+  checkInRules,
+  confirmArrival,
+  createShareLink
+} from "../controllers/safety.controller.js";
+import {
+  getTripPaymentInfo,
+  settleTripShare,
+  settleRules
+} from "../controllers/payment.controller.js";
 import { protect, authorize } from "../middleware/auth.middleware.js";
 import { validate } from "../middleware/validation.middleware.js";
 
@@ -89,8 +101,13 @@ router.post("/:id/start", protect, validate(tripIdRule), startTrip);
 // Complete trip
 router.post("/:id/complete", protect, validate(tripIdRule), completeTrip);
 
-// Update status
-router.patch("/:id/status", protect, validate(tripIdRule), updateTripStatus);
+// Update status (host or admin only; lifecycle transitions enforced in the controller)
+router.patch(
+  "/:id/status",
+  protect,
+  validate([...tripIdRule, ...tripStatusRules]),
+  updateTripStatus
+);
 
 // Passenger management (host only)
 router.post("/:id/approve/:userId", protect, validate(tripIdRule), approvePassenger);

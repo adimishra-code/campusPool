@@ -1,8 +1,8 @@
 ﻿import express from "express";
-import { 
-  getAllFlags, 
-  getFlag, 
-  checkFlag, 
+import {
+  getAllFlags,
+  getFlag,
+  checkFlag,
   toggleFlag,
   initializeFlags,
   flagKeyRule,
@@ -18,6 +18,13 @@ router.get("/init", initializeFlags);
 router.get("/:key", getFlag);
 router.get("/:key/check", checkFlag);
 
-router.patch("/:key", protect, authorize("admin"), validate(flagKeyRule), validate(flagUpdateRules), toggleFlag);
+router.patch(
+  "/:key",
+  protect,
+  authorize("admin"),
+  validate(flagKeyRule),
+  validate(flagUpdateRules),
+  toggleFlag
+);
 
 export default router;

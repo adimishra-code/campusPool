@@ -16,7 +16,9 @@ export default function BottomNav() {
     <nav className="bottom-nav" aria-label="Primary">
       {TABS.map((t) => (
         <NavLink key={t.to} to={t.to} className={t.fab ? "bottom-tab fab" : "bottom-tab"}>
-          <span className="bottom-tab-icon"><Icon name={t.icon} size={t.fab ? 24 : 22} /></span>
+          <span className="bottom-tab-icon">
+            <Icon name={t.icon} size={t.fab ? 24 : 22} />
+          </span>
           <span className="bottom-tab-label">{t.label}</span>
         </NavLink>
       ))}

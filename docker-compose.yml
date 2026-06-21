@@ -38,7 +38,7 @@ services:
       CLIENT_URL: ${CLIENT_URL:-http://localhost:8080}
       COOKIE_SAMESITE: ${COOKIE_SAMESITE:-lax}
       REDIS_URL: redis://redis:6379
-      RATE_LIMIT_REDIS_PREFIX: ${RATE_LIMIT_REDIS_PREFIX:-uberclone:ratelimit}
+      RATE_LIMIT_REDIS_PREFIX: ${RATE_LIMIT_REDIS_PREFIX:-campuspool:ratelimit}
       GOOGLE_MAPS_API_KEY: ${GOOGLE_MAPS_API_KEY:-}
       AUTH_RATE_LIMIT: ${AUTH_RATE_LIMIT:-40}
       SMTP_HOST: ${SMTP_HOST:-}
@@ -57,7 +57,13 @@ services:
       redis:
         condition: service_healthy
     healthcheck:
-      test: ["CMD", "node", "-e", "fetch('http://localhost:5000/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://localhost:5000/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
+        ]
       interval: 15s
       timeout: 5s
       retries: 5

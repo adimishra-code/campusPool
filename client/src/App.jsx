@@ -37,7 +37,9 @@ export default function App() {
   // Bootstrap auth on load: validate the httpOnly session cookie via /auth/me.
   // Sets `bootstrapped` so ProtectedRoute knows whether a session exists. This
   // is the only way the SPA can learn about the cookie (it cannot read it).
-  useEffect(() => { dispatch(fetchMe()); }, [dispatch]);
+  useEffect(() => {
+    dispatch(fetchMe());
+  }, [dispatch]);
 
   return (
     <>
@@ -45,6 +47,8 @@ export default function App() {
       <Routes>
         {/* Public routes */}
         <Route path="/login" element={<Login />} />
+        {/* Password-reset deep link from email — Login reads ?email=&token=. */}
+        <Route path="/reset-password" element={<Login />} />
         <Route path="/share/:token" element={<SharedTrip />} />
         <Route path="/privacy" element={<Privacy />} />
         <Route path="/terms" element={<Terms />} />

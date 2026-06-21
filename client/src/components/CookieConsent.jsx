@@ -19,14 +19,18 @@ export default function CookieConsent() {
       <div className="cookie-text">
         <strong>We value your privacy</strong>
         <p>
-          We use essential cookies to keep you signed in. With your permission we also use
-          analytics cookies to understand usage and improve CampusPool. Read our{" "}
+          We use essential cookies to keep you signed in. With your permission we also use analytics
+          cookies to understand usage and improve CampusPool. Read our{" "}
           <Link to="/privacy">Privacy Policy</Link>.
         </p>
       </div>
       <div className="cookie-actions">
-        <button className="secondary sm" onClick={() => decide("declined")}>Decline</button>
-        <button className="primary sm" onClick={() => decide("accepted")}>Accept</button>
+        <button className="secondary sm" onClick={() => decide("declined")}>
+          Decline
+        </button>
+        <button className="primary sm" onClick={() => decide("accepted")}>
+          Accept
+        </button>
       </div>
     </div>
   );

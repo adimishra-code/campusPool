@@ -2,7 +2,9 @@ import Notification from "../models/Notification.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
 
 export const listNotifications = asyncHandler(async (req, res) => {
-  const notifications = await Notification.find({ user: req.user._id }).sort("-createdAt").limit(50);
+  const notifications = await Notification.find({ user: req.user._id })
+    .sort("-createdAt")
+    .limit(50);
   res.json({ notifications });
 });
 

@@ -52,7 +52,9 @@ async function loadTrip(tripId) {
 // Recompute Trip.paymentStatus from how many approved passengers have settled.
 function refreshPaymentStatus(trip) {
   const owing = approvedPassengerIds(trip);
-  const settled = (trip.splitDetails || []).filter((s) => s.settled && owing.includes(s.user.toString()));
+  const settled = (trip.splitDetails || []).filter(
+    (s) => s.settled && owing.includes(s.user.toString())
+  );
   if (owing.length === 0) trip.paymentStatus = "pending";
   else if (settled.length >= owing.length) trip.paymentStatus = "settled";
   else if (settled.length > 0) trip.paymentStatus = "partial";
@@ -87,7 +89,8 @@ export const getTripPaymentInfo = asyncHandler(async (req, res) => {
   }
 
   // Each viewer sees their own settlement; the host sees the whole split.
-  const splitFor = (uid) => (trip.splitDetails || []).find((s) => s.user.toString() === uid.toString());
+  const splitFor = (uid) =>
+    (trip.splitDetails || []).find((s) => s.user.toString() === uid.toString());
   const mine = splitFor(req.user._id);
 
   res.json({
@@ -95,9 +98,17 @@ export const getTripPaymentInfo = asyncHandler(async (req, res) => {
     paymentStatus: trip.paymentStatus,
     host: { name: hostUser?.name, hasUpi: Boolean(hostUser?.upiId) },
     upi,
-    mySettlement: mine ? { settled: mine.settled, method: mine.method, settledAt: mine.settledAt } : { settled: false },
+    mySettlement: mine
+      ? { settled: mine.settled, method: mine.method, settledAt: mine.settledAt }
+      : { settled: false },
     split: host
-      ? (trip.splitDetails || []).map((s) => ({ user: s.user, amount: s.amount, settled: s.settled, method: s.method, settledAt: s.settledAt }))
+      ? (trip.splitDetails || []).map((s) => ({
+          user: s.user,
+          amount: s.amount,
+          settled: s.settled,
+          method: s.method,
+          settledAt: s.settledAt
+        }))
       : undefined
   });
 });
@@ -117,9 +128,14 @@ export const settleTripShare = asyncHandler(async (req, res) => {
   const { method, reference } = req.body;
   const amount = trip.costPerPerson;
 
-  const existing = (trip.splitDetails || []).find((s) => s.user.toString() === req.user._id.toString());
+  const existing = (trip.splitDetails || []).find(
+    (s) => s.user.toString() === req.user._id.toString()
+  );
   if (existing?.settled) {
-    return res.json({ message: "Your share is already settled", paymentStatus: trip.paymentStatus });
+    return res.json({
+      message: "Your share is already settled",
+      paymentStatus: trip.paymentStatus
+    });
   }
 
   // Record the payment to the host. Peer-to-peer cash/UPI is settled off-platform,
@@ -139,7 +155,13 @@ export const settleTripShare = asyncHandler(async (req, res) => {
     existing.method = method;
     existing.settledAt = new Date();
   } else {
-    trip.splitDetails.push({ user: req.user._id, amount, settled: true, method, settledAt: new Date() });
+    trip.splitDetails.push({
+      user: req.user._id,
+      amount,
+      settled: true,
+      method,
+      settledAt: new Date()
+    });
   }
 
   refreshPaymentStatus(trip);

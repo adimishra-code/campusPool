@@ -16,10 +16,21 @@ export default function AdminSafety() {
   const [loading, setLoading] = useState(true);
   const [msg, setMsg] = useState(null);
 
-  const loadSos = () => api.get("/safety/sos/active").then(({ data }) => setSosEvents(data.events || [])).catch(() => {});
-  const loadMetrics = () => api.get("/analytics/safety").then(({ data }) => setMetrics(data)).catch(() => {});
+  const loadSos = () =>
+    api
+      .get("/safety/sos/active")
+      .then(({ data }) => setSosEvents(data.events || []))
+      .catch(() => {});
+  const loadMetrics = () =>
+    api
+      .get("/analytics/safety")
+      .then(({ data }) => setMetrics(data))
+      .catch(() => {});
   const loadReports = (status) =>
-    api.get("/safety/reports", { params: status ? { status } : {} }).then(({ data }) => setReports(data.reports || [])).catch(() => {});
+    api
+      .get("/safety/reports", { params: status ? { status } : {} })
+      .then(({ data }) => setReports(data.reports || []))
+      .catch(() => {});
 
   useEffect(() => {
     if (user?.role !== "admin") return;
@@ -52,21 +63,46 @@ export default function AdminSafety() {
   };
 
   if (user?.role !== "admin") {
-    return <div className="page"><EmptyState icon="🛡️" title="Admins only" hint="This panel is restricted to administrators." /></div>;
+    return (
+      <div className="page">
+        <EmptyState
+          icon="🛡️"
+          title="Admins only"
+          hint="This panel is restricted to administrators."
+        />
+      </div>
+    );
   }
 
   return (
     <div className="page">
-      <header className="page-head"><div><p className="eyebrow">Admin</p><h1>Trust &amp; Safety</h1></div></header>
+      <header className="page-head">
+        <div>
+          <p className="eyebrow">Admin</p>
+          <h1>Trust &amp; Safety</h1>
+        </div>
+      </header>
 
       {metrics && (
         <section className="panel">
           <p className="eyebrow">Safety overview (last 30 days)</p>
           <div className="metrics">
-            <MetricCard label="Active SOS" value={metrics.activeSos ?? 0} tone={metrics.activeSos ? "red" : "green"} />
-            <MetricCard label="Open reports" value={metrics.openReports ?? 0} tone={metrics.openReports ? "amber" : "green"} />
+            <MetricCard
+              label="Active SOS"
+              value={metrics.activeSos ?? 0}
+              tone={metrics.activeSos ? "red" : "green"}
+            />
+            <MetricCard
+              label="Open reports"
+              value={metrics.openReports ?? 0}
+              tone={metrics.openReports ? "amber" : "green"}
+            />
             <MetricCard label="Reports (30d)" value={metrics.totalReports ?? 0} />
-            <MetricCard label="Arrivals confirmed" value={`${metrics.arrivalConfirmationRate ?? 0}%`} tone="green" />
+            <MetricCard
+              label="Arrivals confirmed"
+              value={`${metrics.arrivalConfirmationRate ?? 0}%`}
+              tone="green"
+            />
             <MetricCard label="Completed trips" value={metrics.completedTrips ?? 0} />
           </div>
         </section>
@@ -84,9 +120,14 @@ export default function AdminSafety() {
               <article key={e._id} className="queue-row sos-row">
                 <div>
                   <strong>{e.user?.name || "Member"}</strong>
-                  <small>{e.user?.phone || "—"}{e.trip ? ` · ${e.trip.pickup?.address} → ${e.trip.destination?.address}` : ""}</small>
+                  <small>
+                    {e.user?.phone || "—"}
+                    {e.trip ? ` · ${e.trip.pickup?.address} → ${e.trip.destination?.address}` : ""}
+                  </small>
                 </div>
-                <button className="secondary sm" onClick={() => resolveSos(e._id)}>Resolve</button>
+                <button className="secondary sm" onClick={() => resolveSos(e._id)}>
+                  Resolve
+                </button>
               </article>
             ))}
           </div>
@@ -97,7 +138,11 @@ export default function AdminSafety() {
         <p className="eyebrow">User reports</p>
         <div className="tabs">
           {REPORT_FILTERS.map((f) => (
-            <button key={f} className={`tab ${filter === f ? "active" : ""}`} onClick={() => setFilter(f)}>
+            <button
+              key={f}
+              className={`tab ${filter === f ? "active" : ""}`}
+              onClick={() => setFilter(f)}
+            >
               {f.charAt(0).toUpperCase() + f.slice(1)}
             </button>
           ))}
@@ -112,15 +157,37 @@ export default function AdminSafety() {
             {reports.map((r) => (
               <article key={r._id} className="queue-row">
                 <div>
-                  <strong>{r.reportedUser?.name || "User"} <span className="vbadge muted">{r.category}</span></strong>
-                  <small>by {r.reporter?.name || "—"}{r.reportedUser?.safetyScore != null ? ` · safety ${r.reportedUser.safetyScore}` : ""}</small>
+                  <strong>
+                    {r.reportedUser?.name || "User"}{" "}
+                    <span className="vbadge muted">{r.category}</span>
+                  </strong>
+                  <small>
+                    by {r.reporter?.name || "—"}
+                    {r.reportedUser?.safetyScore != null
+                      ? ` · safety ${r.reportedUser.safetyScore}`
+                      : ""}
+                  </small>
                   <p className="muted-text">{r.description}</p>
                 </div>
                 {["open", "reviewing"].includes(r.status) && (
                   <div className="passenger-actions">
-                    {r.status === "open" && <button className="secondary sm" onClick={() => resolveReport(r._id, "reviewing")}>Review</button>}
-                    <button className="primary sm" onClick={() => resolveReport(r._id, "actioned")}>Action</button>
-                    <button className="secondary sm" onClick={() => resolveReport(r._id, "dismissed")}>Dismiss</button>
+                    {r.status === "open" && (
+                      <button
+                        className="secondary sm"
+                        onClick={() => resolveReport(r._id, "reviewing")}
+                      >
+                        Review
+                      </button>
+                    )}
+                    <button className="primary sm" onClick={() => resolveReport(r._id, "actioned")}>
+                      Action
+                    </button>
+                    <button
+                      className="secondary sm"
+                      onClick={() => resolveReport(r._id, "dismissed")}
+                    >
+                      Dismiss
+                    </button>
                   </div>
                 )}
               </article>
