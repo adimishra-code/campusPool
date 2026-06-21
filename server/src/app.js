@@ -32,7 +32,22 @@ const app = express();
 // client IP (X-Forwarded-For) rather than the proxy's.
 app.set("trust proxy", 1);
 
-app.use(helmet());
+// This API serves JSON only (plus OAuth 302 redirects), so it should never be a
+// source for scripts, frames or other content — lock the CSP down to nothing.
+// The SPA's own CSP (for scripts/styles/maps) lives in client/nginx.conf.
+app.use(
+  helmet({
+    contentSecurityPolicy: {
+      useDefaults: false,
+      directives: {
+        defaultSrc: ["'none'"],
+        frameAncestors: ["'none'"],
+        baseUri: ["'none'"],
+        formAction: ["'self'"]
+      }
+    }
+  })
+);
 app.use(cors({ origin: env.clientUrl, credentials: true }));
 app.use(express.json({ limit: "1mb" }));
 app.use(cookieParser()); // parse the httpOnly auth cookie into req.cookies
