@@ -1,0 +1,15 @@
+{
+  "name": "mern-uber-clone",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Production-grade Uber clone architecture using MongoDB, Express, React, Node.js, Redux Toolkit, and Socket.IO.",
+  "scripts": {
+    "dev": "concurrently \"npm run dev --prefix server\" \"npm run dev --prefix client\"",
+    "server": "npm run dev --prefix server",
+    "client": "npm run dev --prefix client",
+    "install:all": "npm install && npm install --prefix server && npm install --prefix client"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.2"
+  }
+}

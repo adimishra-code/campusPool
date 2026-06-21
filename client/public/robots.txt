@@ -1,0 +1,23 @@
+# CampusPool robots policy
+User-agent: *
+Allow: /$
+Allow: /login
+Allow: /privacy
+Allow: /terms
+Allow: /support
+Allow: /help
+Allow: /report-bug
+
+# Keep authenticated app + admin + API out of the index
+Disallow: /feed
+Disallow: /recommendations
+Disallow: /offer
+Disallow: /my-trips
+Disallow: /trip/
+Disallow: /profile
+Disallow: /verify
+Disallow: /admin/
+Disallow: /share/
+Disallow: /api/
+
+Sitemap: https://campuspool.app/sitemap.xml

@@ -1,0 +1,63 @@
+// Central icon map — replaces emoji glyphs with a consistent lucide SVG set.
+// Use semantic names (e.g. <Icon name="feed" />) so call sites stay readable
+// and we can re-skin the whole app from one place.
+import {
+  Compass, Sparkles, Plus, Car, ShieldCheck, User, Shield, Siren,
+  Bell, Menu, X, Wallet, MessageCircle, Gift, Search, Calendar, Clock,
+  MapPin, ArrowRight, Check, Moon, Sun, LogOut, ChevronDown, Navigation,
+  Users, Star, Leaf, AlertTriangle, Route, Luggage, Inbox, IndianRupee,
+  RefreshCw, Phone, Mail, Share2, MapPinned, BadgeCheck
+} from "lucide-react";
+
+const MAP = {
+  // navigation
+  feed: Compass,
+  recommendations: Sparkles,
+  offer: Plus,
+  "my-trips": Car,
+  verify: BadgeCheck,
+  profile: User,
+  admin: Shield,
+  safety: Siren,
+  // notifications
+  bell: Bell,
+  sos: Siren,
+  ride: Car,
+  payment: IndianRupee,
+  support: MessageCircle,
+  system: Bell,
+  promo: Gift,
+  // ui glyphs
+  menu: Menu,
+  close: X,
+  search: Search,
+  calendar: Calendar,
+  clock: Clock,
+  pin: MapPin,
+  route: Route,
+  arrow: ArrowRight,
+  check: Check,
+  moon: Moon,
+  sun: Sun,
+  logout: LogOut,
+  chevron: ChevronDown,
+  navigation: Navigation,
+  users: Users,
+  star: Star,
+  leaf: Leaf,
+  alert: AlertTriangle,
+  luggage: Luggage,
+  inbox: Inbox,
+  wallet: Wallet,
+  refresh: RefreshCw,
+  phone: Phone,
+  mail: Mail,
+  share: Share2,
+  map: MapPinned,
+  verified: ShieldCheck
+};
+
+export default function Icon({ name, size = 18, strokeWidth = 2.1, className, ...rest }) {
+  const Cmp = MAP[name] || Inbox;
+  return <Cmp size={size} strokeWidth={strokeWidth} className={className} aria-hidden {...rest} />;
+}
