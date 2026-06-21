@@ -107,7 +107,7 @@ rate-limits key on the real client IP. Never commit `.env`.
 Feature-complete across the planned roadmap: stabilization, backend cleanup,
 campus frontend, verification & trust, intelligent matching, **real-time trip chat**,
 **safety (SOS, live location, emergency contacts)**, and **peer-to-peer payments
-(cash / UPI-QR)** — backed by 56 Jest/Supertest tests, a seed script, Docker, and CI.
+(cash / UPI-QR)** — backed by 105 Jest/Supertest tests, a seed script, Docker, and CI.
 
 Production hardening in place: hard email-verification login gate, optional login
 2FA, password reset, per-account lockout + per-IP auth/OTP/reset rate limiting,
@@ -116,4 +116,4 @@ escaped admin-search regex (ReDoS-safe), OTPs never leaked to clients in
 production, MongoDB auth + container healthchecks, and an nginx layer with gzip,
 asset caching and security headers. Legal pages, cookie consent, SEO
 (robots/sitemap/structured data), support/bug-report flows and consent-gated
-analytics complete the launch checklist — backed by 76 Jest/Supertest tests.
+analytics complete the launch checklist — backed by 105 Jest/Supertest tests.

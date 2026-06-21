@@ -27,9 +27,10 @@ export const updatePreferencesRules = [
 
 export const userIdRule = [param("id").isMongoId()];
 
-// Get user profile (public)
+// Get user profile. Serves both the public lookup (/:id) and the authenticated
+// self lookup (/me, which has no :id param) — fall back to the signed-in user.
 export const getUser = asyncHandler(async (req, res) => {
-  const user = await User.findById(req.params.id).select(
+  const user = await User.findById(req.params.id || req.user?._id).select(
     "name avatarUrl hostel role verificationStatus trustScore trustBreakdown ratingAverage ratingCount createdAt"
   );
   
