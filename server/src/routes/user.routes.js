@@ -11,8 +11,7 @@ import {
   getAllUsers,
   adminUpdateUser,
   updateProfileRules,
-  updatePreferencesRules,
-  userIdRule
+  updatePreferencesRules
 } from "../controllers/user.controller.js";
 import { protect, authorize } from "../middleware/auth.middleware.js";
 import { validate } from "../middleware/validation.middleware.js";

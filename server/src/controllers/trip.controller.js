@@ -1,6 +1,5 @@
 ﻿import { body, param, query } from "express-validator";
 import Trip from "../models/Trip.js";
-import User from "../models/User.js";
 import Vehicle from "../models/Vehicle.js";
 import RouteTemplate from "../models/RouteTemplate.js";
 import ImpactStats from "../models/ImpactStats.js";

@@ -18,7 +18,7 @@ import { validationResult } from "express-validator";
  * @param {Array<string>} [locations] - optional, informational only
  * @returns {import("express").RequestHandler}
  */
-export function validate(rules = [], locations) {
+export function validate(rules = [], _locations) {
   const chains = Array.isArray(rules) ? rules : [rules];
 
   return async function runValidation(req, _res, next) {

@@ -1,6 +1,6 @@
 import Trip from "../models/Trip.js";
 import MatchCache from "../models/MatchCache.js";
-import { haversineKm, proximityScore, routeProximity } from "../utils/geospatial.js";
+import { routeProximity } from "../utils/geospatial.js";
 
 /**
  * Intelligent ride matching engine.

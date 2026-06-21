@@ -1,6 +1,5 @@
 ﻿import { body, param } from "express-validator";
 import User from "../models/User.js";
-import Verification from "../models/Verification.js";
 import Trip from "../models/Trip.js";
 import AuditLog from "../models/AuditLog.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
@@ -14,7 +13,7 @@ export const updateProfileRules = [
   body("emergencyContacts").optional().isArray(),
   body("preferences").optional().isObject(),
   // UPI VPA, e.g. name@bank — letters/digits/dot/underscore/hyphen then @handle.
-  body("upiId").optional({ checkFalsy: true }).trim().matches(/^[\w.\-]{2,}@[a-zA-Z]{2,}$/).withMessage("Enter a valid UPI ID like name@bank")
+  body("upiId").optional({ checkFalsy: true }).trim().matches(/^[\w.-]{2,}@[a-zA-Z]{2,}$/).withMessage("Enter a valid UPI ID like name@bank")
 ];
 
 export const updatePreferencesRules = [

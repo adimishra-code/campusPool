@@ -6,6 +6,19 @@ on:
   pull_request:
 
 jobs:
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      # ESLint + its plugins live in the root package (single flat config covers
+      # both client and server). Server/client deps aren't needed just to lint.
+      - run: npm install
+      - run: npm run lint
+
   server-tests:
     name: Server tests
     runs-on: ubuntu-latest
@@ -33,3 +46,15 @@ jobs:
           node-version: 20
       - run: npm install
       - run: npm run build
+
+  docker-build:
+    name: Docker build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      # Verify the production images build. JWT_SECRET is required by the
+      # compose file's variable substitution even though we only build here.
+      - name: Build server and web images
+        env:
+          JWT_SECRET: ci-build-placeholder-secret-not-used-at-runtime
+        run: docker compose build
