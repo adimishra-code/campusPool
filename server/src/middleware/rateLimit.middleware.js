@@ -1,10 +1,12 @@
 import rateLimit from "express-rate-limit";
 import { env } from "../config/env.js";
+import { makeRateLimitStore } from "../config/redis.js";
 
 // Strict limiter for credential/OTP endpoints (login, register, OTP request) to
 // blunt credential stuffing and OTP spam. Applied per-route — NOT to the whole
 // /api/auth router — so frequent authed reads like GET /me aren't throttled.
-// Disabled under tests; threshold tunable via AUTH_RATE_LIMIT.
+// Disabled under tests; threshold tunable via AUTH_RATE_LIMIT. Backed by Redis
+// when REDIS_URL is set (shared across replicas), else an in-memory store.
 export const authLimiter = env.nodeEnv === "test"
   ? (_req, _res, next) => next()
   : rateLimit({
@@ -12,18 +14,21 @@ export const authLimiter = env.nodeEnv === "test"
       limit: env.authRateLimit,
       standardHeaders: true,
       legacyHeaders: false,
+      store: makeRateLimitStore("auth"),
       message: { message: "Too many attempts. Please try again later." }
     });
 
 // Factory so every sensitive endpoint gets its own per-IP bucket. Bypassed under
 // tests (where express-rate-limit's in-memory store would leak across cases).
-function makeLimiter({ windowMs, limit, message }) {
+// `suffix` namespaces the bucket in Redis so limiters don't share counts.
+function makeLimiter({ windowMs, limit, message, suffix }) {
   if (env.nodeEnv === "test") return (_req, _res, next) => next();
   return rateLimit({
     windowMs,
     limit,
     standardHeaders: true,
     legacyHeaders: false,
+    store: makeRateLimitStore(suffix),
     message: { message }
   });
 }
@@ -33,6 +38,7 @@ function makeLimiter({ windowMs, limit, message }) {
 export const loginLimiter = makeLimiter({
   windowMs: 15 * 60 * 1000,
   limit: env.loginRateLimit,
+  suffix: "login",
   message: "Too many login attempts. Please try again later."
 });
 
@@ -40,6 +46,7 @@ export const loginLimiter = makeLimiter({
 export const passwordResetLimiter = makeLimiter({
   windowMs: 60 * 60 * 1000,
   limit: env.passwordResetRateLimit,
+  suffix: "reset",
   message: "Too many password reset requests. Please try again later."
 });
 
@@ -48,6 +55,7 @@ export const passwordResetLimiter = makeLimiter({
 export const otpVerifyLimiter = makeLimiter({
   windowMs: 15 * 60 * 1000,
   limit: env.otpVerifyRateLimit,
+  suffix: "otpverify",
   message: "Too many verification attempts. Please request a new code."
 });
 
@@ -55,6 +63,7 @@ export const otpVerifyLimiter = makeLimiter({
 export const otpRequestLimiter = makeLimiter({
   windowMs: 15 * 60 * 1000,
   limit: env.otpRequestRateLimit,
+  suffix: "otprequest",
   message: "Too many code requests. Please wait before trying again."
 });
 
