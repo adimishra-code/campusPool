@@ -7,8 +7,7 @@ import { env, assertRequiredSecrets } from "./config/env.js";
 import { registerSocketHandlers } from "./sockets/index.js";
 import { startArrivalEscalationScheduler } from "./services/escalation.service.js";
 
-// Crash early on an insecure production configuration (e.g. missing JWT_SECRET)
-// before any client can connect.
+// Verify configuration requirements before starting.
 assertRequiredSecrets();
 
 await connectDB();
@@ -24,16 +23,14 @@ const io = new Server(server, {
 registerSocketHandlers(io);
 app.set("io", io);
 
-// Background safety scheduler: escalate trips with no safe-arrival confirmation.
+// Start background safety scheduler for overdue arrival escalations.
 const escalationTimer = startArrivalEscalationScheduler(io);
 
 server.listen(env.port, () => {
   console.log(`API listening on http://localhost:${env.port}`);
 });
 
-// Graceful shutdown: stop the scheduler, refuse new connections and drain
-// in-flight requests, close sockets, then the DB — so a container stop
-// (SIGTERM) or Ctrl-C (SIGINT) exits cleanly instead of dropping live traffic.
+// Graceful shutdown: stops scheduler, closes server, sockets, and DB.
 let shuttingDown = false;
 async function shutdown(signal) {
   if (shuttingDown) return;
@@ -42,7 +39,7 @@ async function shutdown(signal) {
 
   clearInterval(escalationTimer);
 
-  // Force-exit if a hung connection prevents a clean close within 10s.
+  // Force-exit if clean shutdown hangs.
   const force = setTimeout(() => {
     console.error("[shutdown] forced exit after timeout");
     process.exit(1);

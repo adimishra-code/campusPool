@@ -114,13 +114,11 @@ describe("Password reset", () => {
     expect(forgot.status).toBe(200);
     expect(forgot.body.previewToken).toBeTruthy(); // dev echo
 
-    const reset = await agent()
-      .post("/api/auth/reset-password")
-      .send({
-        email: "reset@univ.edu",
-        token: forgot.body.previewToken,
-        password: "newpassword123"
-      });
+    const reset = await agent().post("/api/auth/reset-password").send({
+      email: "reset@univ.edu",
+      token: forgot.body.previewToken,
+      password: "newpassword123"
+    });
     expect(reset.status).toBe(200);
 
     const ok = await agent()

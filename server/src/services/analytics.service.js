@@ -7,13 +7,11 @@ import Report from "../models/Report.js";
 /**
  * Campus ride-share platform analytics.
  *
- * Phase 1: the Uber-era revenue / driver-leaderboard / surge metrics were
- * removed along with the Payment-revenue and Driver models. The overview now
- * reports the metrics that matter for a student carpooling network:
+ * Aggregates and reports key metrics for the student carpooling network:
  *   - ridesShared    : completed trips in range
  *   - seatsFilled    : total approved passenger seats across completed trips
  *   - activeHosts    : distinct hosts who offered a trip in range
- *   - carbonSavedKg   : total CO2 saved (sum of Trip.carbonSavedKg)
+ *   - carbonSavedKg  : total CO2 saved (sum of Trip.carbonSavedKg)
  *   - verifiedUsers  : users with approved verification (campus trust)
  * plus supporting breakdowns for charts.
  */
@@ -96,7 +94,7 @@ export async function platformAnalytics({ from, to }) {
     ])
   ]);
 
-  // Recommendation funnel (TASK 12): views -> clicks -> joins.
+  // Recommendation funnel metrics: views -> clicks -> joins.
   const [viewAgg, recommendationClicks, recommendationJoins] = await Promise.all([
     MatchEvent.aggregate([
       { $match: { type: "recommendation_view", createdAt: range } },
@@ -132,7 +130,7 @@ export async function platformAnalytics({ from, to }) {
 }
 
 /**
- * Phase 5 — Trust & Safety analytics for the campus operations dashboard.
+ * Trust & Safety analytics for the campus operations dashboard.
  * Aggregates SOS activity, user reports, and safe-arrival compliance.
  */
 export async function safetyAnalytics({ from, to }) {

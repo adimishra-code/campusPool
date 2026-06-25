@@ -70,9 +70,7 @@ export async function sendPasswordResetEmail(to, rawToken) {
 export async function sendSafetyAlertEmail(recipients, { subject, text, html }) {
   const unique = [...new Set((recipients || []).filter(Boolean))];
   const results = await Promise.all(
-    unique.map((to) =>
-      sendMail({ to, subject, text, html }).catch(() => ({ delivered: false }))
-    )
+    unique.map((to) => sendMail({ to, subject, text, html }).catch(() => ({ delivered: false })))
   );
   return { sent: results.filter((r) => r.delivered).length, total: unique.length };
 }

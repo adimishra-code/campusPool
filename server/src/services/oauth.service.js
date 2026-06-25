@@ -7,9 +7,7 @@ import { env } from "../config/env.js";
 
 let configured = false;
 
-// Wire the Google strategy only when credentials are present. Returns whether
-// OAuth is active so callers can mount routes conditionally. Safe to call once
-// at startup; idempotent.
+// Configures Google OAuth strategy if credentials are provided. Idempotent.
 export function configureOAuth() {
   if (configured || !env.googleOAuthConfigured) return configured;
 

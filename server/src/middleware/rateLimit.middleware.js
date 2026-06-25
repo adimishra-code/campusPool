@@ -7,13 +7,13 @@ export const authLimiter =
   env.nodeEnv === "test"
     ? (_req, _res, next) => next()
     : rateLimit({
-      windowMs: 15 * 60 * 1000,
-      limit: env.authRateLimit,
-      standardHeaders: true,
-      legacyHeaders: false,
-      store: makeRateLimitStore("auth"),
-      message: { message: "Too many attempts. Please try again later." }
-    });
+        windowMs: 15 * 60 * 1000,
+        limit: env.authRateLimit,
+        standardHeaders: true,
+        legacyHeaders: false,
+        store: makeRateLimitStore("auth"),
+        message: { message: "Too many attempts. Please try again later." }
+      });
 
 function makeLimiter({ windowMs, limit, message, suffix }) {
   if (env.nodeEnv === "test") {

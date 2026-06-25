@@ -19,10 +19,9 @@ function readCookie(cookieHeader, name) {
 /**
  * Socket.IO connection layer.
  *
- * Phase 5 adds trip chat. A socket may only join a trip's room (and therefore
- * receive its chat broadcasts) if the authenticated user is the host or an
- * approved/completed passenger — this prevents eavesdropping. Messages are
- * persisted via REST and broadcast to `trip:<id>` from the chat controller.
+ * Sockets can join a trip's chat room only if the authenticated user is the host or
+ * an approved/completed passenger. Messages are persisted via REST and broadcast
+ * to the `trip:<id>` room.
  */
 async function canAccessTrip(userId, tripId) {
   const trip = await Trip.findById(tripId).select("host passengers").lean();

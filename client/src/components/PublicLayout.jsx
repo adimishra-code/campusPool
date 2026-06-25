@@ -20,8 +20,8 @@ export default function PublicLayout({ children, title, description, seoPath }) 
           <strong>CampusPool</strong>
         </Link>
         <div style={{ display: "flex", gap: "16px", alignItems: "center" }}>
-          <button 
-            className="link-button" 
+          <button
+            className="link-button"
             onClick={() => dispatch(toggleTheme())}
             style={{ padding: "4px", color: "var(--ink)" }}
             aria-label="Toggle dark mode"

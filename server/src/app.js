@@ -1,4 +1,4 @@
-﻿import cookieParser from "cookie-parser";
+import cookieParser from "cookie-parser";
 import cors from "cors";
 import express from "express";
 import helmet from "helmet";
@@ -28,13 +28,10 @@ import safetyRoutes from "./routes/safety.routes.js";
 
 const app = express();
 
-// Behind nginx/Docker, trust the first proxy hop so rate-limit keys on the real
-// client IP (X-Forwarded-For) rather than the proxy's.
+// Trust reverse proxy for client IP rate-limiting.
 app.set("trust proxy", 1);
 
-// This API serves JSON only (plus OAuth 302 redirects), so it should never be a
-// source for scripts, frames or other content — lock the CSP down to nothing.
-// The SPA's own CSP (for scripts/styles/maps) lives in client/nginx.conf.
+// Strict CSP policy for a JSON-only API.
 app.use(
   helmet({
     contentSecurityPolicy: {
@@ -50,57 +47,34 @@ app.use(
 );
 app.use(cors({ origin: env.clientUrl, credentials: true }));
 app.use(express.json({ limit: "1mb" }));
-app.use(cookieParser()); // parse the httpOnly auth cookie into req.cookies
-app.use(hpp()); // collapse duplicated query/body params (HTTP parameter pollution)
-app.use(mongoSanitize); // strip MongoDB operator keys ($, dotted) from input
+app.use(cookieParser()); // Parse the auth cookie
+app.use(hpp()); // Prevent HTTP parameter pollution
+app.use(mongoSanitize); // Sanitize inputs to prevent MongoDB injection
 app.use(morgan(env.nodeEnv === "production" ? "combined" : "dev"));
 app.use(rateLimit({ windowMs: 15 * 60 * 1000, limit: 300, store: makeRateLimitStore("global") }));
 
-// Passport (stateless) — only needed when Google OAuth is configured.
+// Google OAuth configuration check and initialization.
 if (configureOAuth()) app.use(passport.initialize());
 
 app.get("/health", (_req, res) => {
   res.json({ status: "ok", service: "campuspool-api" });
 });
 
-// Auth & User routes (the strict auth limiter is applied per-route inside
-// auth.routes.js to login/register/OTP, so frequent GET /me reads aren't hit).
+// App route handlers.
 app.use("/api/auth", authRoutes);
 app.use("/api/users", userRoutes);
-
-// Vehicle routes
 app.use("/api/vehicles", vehicleRoutes);
-
-// Trip routes (carpool/ride-share core)
 app.use("/api/trips", tripRoutes);
-
-// Colleges (campus directory)
 app.use("/api/colleges", collegeRoutes);
-
-// Safety / SOS
 app.use("/api/safety", safetyRoutes);
-
-// Verification routes
 app.use("/api/verification", verificationRoutes);
-
-// Feature flags
 app.use("/api/features", featureFlagRoutes);
-
-// Payment & Ratings
 app.use("/api/payments", paymentRoutes);
 app.use("/api/ratings", ratingRoutes);
-
-// Notifications & Support
 app.use("/api/notifications", notificationRoutes);
 app.use("/api/support", supportRoutes);
-
-// Maps & Location
 app.use("/api/maps", mapsRoutes);
-
-// Analytics
 app.use("/api/analytics", analyticsRoutes);
-
-// Admin
 app.use("/api/admin", adminRoutes);
 
 app.use(notFound);

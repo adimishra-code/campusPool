@@ -10,7 +10,11 @@ import { signToken, generateResetToken, hashResetToken } from "../utils/token.js
 import { setAuthCookie, clearAuthCookie } from "../utils/cookies.js";
 import { issueOtp } from "./verification.controller.js";
 import { env } from "../config/env.js";
-import { sendLoginOtpEmail, sendPasswordResetEmail, sendOtpEmail } from "../services/email.service.js";
+import {
+  sendLoginOtpEmail,
+  sendPasswordResetEmail,
+  sendOtpEmail
+} from "../services/email.service.js";
 
 // Max wrong guesses for a single OTP code before it is invalidated.
 const MAX_OTP_ATTEMPTS = 5;
@@ -220,8 +224,7 @@ export const resendVerification = asyncHandler(async (req, res) => {
   res.json({ message: "If that account exists, a verification code has been sent.", previewOtp });
 });
 
-// Login user. Order of checks: account lock → credentials → active → email
-// verified (hard gate) → optional 2FA challenge → session.
+// Authenticates user and handles account lock, status checks, email verification, and 2FA.
 export const login = asyncHandler(async (req, res) => {
   const { email, password } = req.body;
 
@@ -329,8 +332,7 @@ export const verifyLoginOtp = asyncHandler(async (req, res) => {
   res.json({ token, user: publicUser(user) });
 });
 
-// Forgot password — email a single-use reset token. Always responds 200 to
-// avoid account enumeration.
+// Generates and emails password reset token. Responds with 200 to prevent account enumeration.
 export const forgotPassword = asyncHandler(async (req, res) => {
   const { email } = req.body;
   const user = await User.findOne({ email }).select("+password");
@@ -406,13 +408,12 @@ export const requestOtp = asyncHandler(async (req, res) => {
     throw error;
   }
 
-  // Deliver the code to the account's email (SMS removed — email-only via SMTP).
+  // Deliver the code to the registered email address.
   if (env.mailConfigured) {
     await sendOtpEmail(user.email, code).catch(() => {});
   }
 
-  // Only echo the code back when email isn't configured AND we're not in
-  // production — never leak OTPs to clients in a live deployment.
+  // Echo the code back only in non-production environments when email is unconfigured.
   const previewOtp = !env.mailConfigured && env.nodeEnv !== "production" ? code : undefined;
   res.json({ message: "Verification code sent to your registered email", previewOtp });
 });

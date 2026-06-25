@@ -107,7 +107,7 @@ export default function AdminVerifications() {
                 <div>
                   <strong>{e.user?.name || "Member"}</strong>
                   <small>
-                    {e.user?.phone || "—"}
+                    {e.user?.phone || "ï¿½"}
                     {e.trip ? ` - ${e.trip.pickup?.address} to ${e.trip.destination?.address}` : ""}
                   </small>
                 </div>

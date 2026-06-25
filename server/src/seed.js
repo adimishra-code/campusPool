@@ -1,7 +1,4 @@
-// Seed script: one-command demo data.
-//   npm run seed   (needs MONGO_URI reachable)
-// Wipes core collections and creates colleges, verified demo users, approved
-// vehicles, and a handful of upcoming trips so the app is clickable immediately.
+// Seeds the database with default colleges, verified demo users, vehicles, and active trips.
 import mongoose from "mongoose";
 import { connectDB } from "./config/db.js";
 import College from "./models/College.js";

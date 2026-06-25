@@ -22,7 +22,7 @@ router.post("/reports", protect, validate(reportRules), createReport);
 router.get("/reports", protect, authorize("admin"), listReports);
 router.post("/reports/:id/resolve", protect, authorize("admin"), resolveReport);
 
-// Public read-only shared-trip view (signed token, no auth) — Task C
+// Public read-only shared-trip view (signed token, no authentication required)
 router.get("/share/:token", getSharedTrip);
 
 export default router;

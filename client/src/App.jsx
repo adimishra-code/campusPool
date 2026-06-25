@@ -34,9 +34,7 @@ function RouteTracker() {
 export default function App() {
   const dispatch = useDispatch();
 
-  // Bootstrap auth on load: validate the httpOnly session cookie via /auth/me.
-  // Sets `bootstrapped` so ProtectedRoute knows whether a session exists. This
-  // is the only way the SPA can learn about the cookie (it cannot read it).
+  // Bootstrap authentication: validate session cookie on load.
   useEffect(() => {
     dispatch(fetchMe());
   }, [dispatch]);

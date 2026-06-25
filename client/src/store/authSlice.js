@@ -1,11 +1,8 @@
 import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
 import api from "../services/api.js";
 
-// The JWT now lives only in an httpOnly cookie (set by the server, sent
-// automatically with `withCredentials`). JavaScript never sees or stores it, so
-// XSS cannot steal the session. We cache only the non-sensitive user profile for
-// instant first paint — the cookie is the source of truth, re-validated on load
-// via fetchMe().
+// Session JWT is stored in an httpOnly cookie. JavaScript cannot access it, preventing XSS.
+// The user profile is cached locally for faster initial paint.
 const cachedUser = JSON.parse(localStorage.getItem("user") || "null");
 
 const errMsg = (err) => err.response?.data?.message || err.message || "Request failed";
@@ -54,9 +51,7 @@ export const setTwoFactor = createAsyncThunk(
   }
 );
 
-// Refresh the signed-in profile AND validate the session cookie. Used to
-// bootstrap auth state on app load and to keep the profile/verification badge
-// fresh. A rejection means there is no valid session (logged out / expired).
+// Refreshes the user profile and validates the session cookie.
 export const fetchMe = createAsyncThunk("auth/fetchMe", async (_, { rejectWithValue }) => {
   try {
     const { data } = await api.get("/auth/me");
@@ -77,9 +72,7 @@ export const logoutUser = createAsyncThunk("auth/logoutUser", async (_, { dispat
   }
 });
 
-// A token-issuing response (login / verify-email / 2FA) confirms the cookie was
-// set by the server; we adopt the returned user profile. The JWT in the body is
-// intentionally ignored — the browser relies on the cookie.
+// Adopts the session when a successful login/verification response is received.
 function adoptSession(state, user) {
   state.user = user;
   state.authenticated = true;

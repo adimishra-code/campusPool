@@ -273,13 +273,11 @@ export const uploadVehicleDocument = asyncHandler(async (req, res) => {
   await AuditLog.log("verification.submit", "Verification", v._id, req.user._id, {
     step: `vehicle_${type}`
   });
-  res
-    .status(201)
-    .json({
-      message: `Vehicle ${type} uploaded`,
-      vehicleVerification: v.vehicleVerification,
-      progress: v.progress
-    });
+  res.status(201).json({
+    message: `Vehicle ${type} uploaded`,
+    vehicleVerification: v.vehicleVerification,
+    progress: v.progress
+  });
 });
 
 // Stream a stored document. Only the owner or an admin may view it.

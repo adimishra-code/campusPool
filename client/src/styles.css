@@ -91,16 +91,16 @@ button {
 .public-page.dark {
   color-scheme: dark;
   /* ---- Neutral slate palette (no green tint) ---- */
-  --bg: #0B0D10;
+  --bg: #0b0d10;
   --surface: #111418;
-  --surface-soft: #171C23;
-  --surface-raised: #1A2029;
-  --ink: #F5F7FA;
-  --ink-secondary: #D7DEE7;
-  --ink-tertiary: #B0B9C6;
-  --muted: #8B95A3;
-  --line: #252C36;
-  --line-subtle: #1E242D;
+  --surface-soft: #171c23;
+  --surface-raised: #1a2029;
+  --ink: #f5f7fa;
+  --ink-secondary: #d7dee7;
+  --ink-tertiary: #b0b9c6;
+  --muted: #8b95a3;
+  --line: #252c36;
+  --line-subtle: #1e242d;
   /* Status + accent text — stays vibrant for legibility */
   --accent-dark: #2fb37a;
   --warn: #e0a93b;
@@ -654,7 +654,7 @@ select {
 }
 
 /* ===================================================================
-   CampusPool — Phase 2 UI
+   CampusPool — Common Components & UI Helpers
    =================================================================== */
 
 /* Links styled as buttons */
@@ -1134,7 +1134,7 @@ a.link-button {
   }
 }
 
-/* ===== Phase 3 — verification ===== */
+/* ===== Verification ===== */
 .section-head {
   display: flex;
   align-items: center;
@@ -1272,7 +1272,7 @@ a.link-button {
   text-transform: capitalize;
 }
 
-/* ===== Phase 4 — matching UI ===== */
+/* ===== Matching UI ===== */
 .match-badge-wrap {
   position: relative;
 }
@@ -1370,7 +1370,7 @@ a.link-button {
   gap: 12px;
 }
 
-/* ===== Phase 5 — chat ===== */
+/* ===== Chat ===== */
 .chat-panel {
   display: grid;
   gap: 12px;
@@ -1428,7 +1428,7 @@ a.link-button {
   flex: 1;
 }
 
-/* ===== Phase 6 — safety ===== */
+/* ===== Safety ===== */
 .safety-panel {
   display: grid;
   gap: 10px;
@@ -1580,8 +1580,7 @@ a.link-button {
 }
 
 /* ===================================================================
-   Phase 1 — Design-system polish (tokens applied: motion, depth, icons)
-   Appended last so it refines the base rules above via the cascade.
+   Design-system Refinement (Cascade Overrides)
    =================================================================== */
 
 body {
@@ -1760,9 +1759,7 @@ nav a.active {
 }
 
 /* ===================================================================
-   Phase 2 — App-like navigation (bottom tab bar + bottom sheet)
-   Explicit properties + .active resets so the generic `nav a` rules
-   above don't leak into these components.
+   Mobile Layout & App-like Navigation
    =================================================================== */
 
 /* ---- Bottom tab bar (mobile only; revealed in the ≤980px media query) ---- */
@@ -1937,7 +1934,7 @@ nav a.active {
 }
 
 /* ===================================================================
-   Phase 3 — Map-forward layouts (feed split, offer preview)
+   Map-forward Layouts (Feed Split & Split Previews)
    =================================================================== */
 .feed-layout {
   display: grid;
@@ -1980,7 +1977,7 @@ nav a.active {
 } /* desktop keeps the map always visible */
 
 /* ===================================================================
-   Phase 4 — Expressive polish (login hero, cards, skeletons, toasts)
+   Expressive UI Refinement (Login Hero, Cards, Skeletons, Toasts)
    =================================================================== */
 
 /* ---- Split-screen auth: gradient/glass brand hero + form ---- */
@@ -3535,9 +3532,7 @@ nav a.active {
 
 /* ---- Map panel (fallback): neutral dark surfaces ---- */
 .app.dark .map-panel {
-  background:
-    linear-gradient(135deg, rgba(10, 122, 75, 0.08), transparent 40%),
-    var(--surface);
+  background: linear-gradient(135deg, rgba(10, 122, 75, 0.08), transparent 40%), var(--surface);
 }
 .app.dark .map-caption {
   background: var(--surface-raised);

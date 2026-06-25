@@ -1,6 +1,4 @@
-// Straight-line (haversine) distance + a rough duration estimate between two
-// points. Used to pre-fill a trip's cost-sharing distance — there is no fare
-// engine: hosts set their own cost-per-seat and passengers settle peer-to-peer.
+// Calculates haversine distance and estimates duration between points to pre-fill cost-sharing distance.
 export function estimateDistanceAndDuration(pickup, destination) {
   const [lng1, lat1] = pickup.coordinates.coordinates;
   const [lng2, lat2] = destination.coordinates.coordinates;

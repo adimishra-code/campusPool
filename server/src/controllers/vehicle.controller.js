@@ -1,4 +1,4 @@
-﻿import { body, param } from "express-validator";
+import { body, param } from "express-validator";
 import Vehicle from "../models/Vehicle.js";
 import Verification from "../models/Verification.js";
 import AuditLog from "../models/AuditLog.js";
@@ -76,10 +76,7 @@ export const registerVehicle = asyncHandler(async (req, res) => {
     plateNumber
   });
 
-  // Create or update verification record with vehicle info, and enqueue the
-  // vehicle for admin review immediately so it appears in the Pending Vehicles
-  // queue right after registration. Documents can be attached now or uploaded
-  // later via /verify (uploadVehicleDocument) / POST /vehicles/:id/documents.
+  // Create or update verification record with vehicle info.
   let verification = await Verification.findOne({ user: req.user._id });
   if (!verification) {
     verification = new Verification({ user: req.user._id });

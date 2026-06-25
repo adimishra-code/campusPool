@@ -3,8 +3,7 @@ import User from "../models/User.js";
 import { env } from "../config/env.js";
 import { AUTH_COOKIE } from "../utils/cookies.js";
 
-// Resolve the JWT from the httpOnly cookie first (browser clients), falling back
-// to the `Authorization: Bearer` header (API/mobile clients and tests).
+// Retrieves token from httpOnly cookie or Authorization header.
 function getToken(req) {
   if (req.cookies?.[AUTH_COOKIE]) return req.cookies[AUTH_COOKIE];
   const header = req.headers.authorization || "";
@@ -36,9 +35,7 @@ export async function protect(req, _res, next) {
   }
 }
 
-// Like `protect`, but never blocks: attaches req.user when a valid token is
-// present and silently continues otherwise. For endpoints that work for both
-// anonymous and signed-in callers (e.g. analytics page-view tracking).
+// Attaches req.user if a valid token is present; otherwise silently continues.
 export async function optionalAuth(req, _res, next) {
   try {
     const token = getToken(req);

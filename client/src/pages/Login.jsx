@@ -516,19 +516,19 @@ export default function Login() {
             ["login", "register"].includes(mode) &&
             step === 1 &&
             !(mode === "login" && loginAs === "admin") && (
-            <>
-              <div className="auth-divider">or</div>
-              <button
-                type="button"
-                className="auth-google"
-                onClick={() => {
-                  window.location.href = `${API_BASE}/auth/google`;
-                }}
-              >
-                <GoogleG /> Continue with Google
-              </button>
-            </>
-          )}
+              <>
+                <div className="auth-divider">or</div>
+                <button
+                  type="button"
+                  className="auth-google"
+                  onClick={() => {
+                    window.location.href = `${API_BASE}/auth/google`;
+                  }}
+                >
+                  <GoogleG /> Continue with Google
+                </button>
+              </>
+            )}
         </div>
 
         {/* Mode switches */}

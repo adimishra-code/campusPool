@@ -7,9 +7,7 @@ import { asyncHandler } from "../utils/asyncHandler.js";
 
 /**
  * Campus admin dashboard.
- * Phase 1: driver management, surge management and promo creation were removed
- * along with the legacy Uber models. The dashboard now reports campus
- * ride-share KPIs and keeps user / trip / verification oversight.
+ * Reports campus ride-share KPIs and keeps user / trip / verification oversight.
  */
 export const dashboard = asyncHandler(async (_req, res) => {
   const activeTripStatuses = ["offered", "open", "full", "departed", "in_progress"];

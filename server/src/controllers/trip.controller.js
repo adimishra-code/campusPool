@@ -1,4 +1,4 @@
-﻿import { body, param, query } from "express-validator";
+import { body, param, query } from "express-validator";
 import Trip from "../models/Trip.js";
 import Vehicle from "../models/Vehicle.js";
 import RouteTemplate from "../models/RouteTemplate.js";
@@ -159,7 +159,7 @@ export const offerTrip = asyncHandler(async (req, res) => {
   });
 });
 
-// Find available trips — ranked by match score (TASK 7).
+// Find available trips ranked by match score.
 export const findTrips = asyncHandler(async (req, res) => {
   const { pickupLat, pickupLng, destLat, destLng, date, page = 1, limit = 20 } = req.query;
 

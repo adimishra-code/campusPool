@@ -1,7 +1,6 @@
-﻿import mongoose from "mongoose";
+import mongoose from "mongoose";
 
-// Domain error that carries an HTTP status so the central error handler
-// returns a proper 4xx instead of a generic 500.
+// Custom error carrying an HTTP status code for central error handler.
 function tripError(message, statusCode = 400) {
   const err = new Error(message);
   err.statusCode = statusCode;

@@ -1,4 +1,4 @@
-﻿import { body, param } from "express-validator";
+import { body, param } from "express-validator";
 import User from "../models/User.js";
 import Trip from "../models/Trip.js";
 import AuditLog from "../models/AuditLog.js";
@@ -85,9 +85,7 @@ export const updateProfile = asyncHandler(async (req, res) => {
   });
 });
 
-// Upgrade the signed-in student to a host. Self-service is safe: hosting still
-// requires an admin-approved vehicle before they can actually offer rides
-// (canOfferRides() checks role === "host" AND verified). Admins are left as-is.
+// Upgrades the authenticated student user to a host. Hosting still requires a verified vehicle.
 export const becomeHost = asyncHandler(async (req, res) => {
   if (req.user.role === "student") {
     req.user.role = "host";
@@ -362,9 +360,7 @@ export const promoteToAdmin = asyncHandler(async (req, res) => {
   }
 
   res.json({
-    message: alreadyAdmin
-      ? `${user.name} is already an admin.`
-      : `${user.name} is now an admin.`,
+    message: alreadyAdmin ? `${user.name} is already an admin.` : `${user.name} is now an admin.`,
     user: { id: user._id, name: user.name, email: user.email, role: user.role }
   });
 });

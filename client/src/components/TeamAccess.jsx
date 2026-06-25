@@ -59,11 +59,7 @@ export default function TeamAccess() {
           style={{ flex: 1 }}
           disabled={loading}
         />
-        <button
-          type="submit"
-          className="primary"
-          disabled={loading || !email.trim()}
-        >
+        <button type="submit" className="primary" disabled={loading || !email.trim()}>
           {loading ? "Promoting..." : "Promote to Admin"}
         </button>
       </form>

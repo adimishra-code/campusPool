@@ -2,9 +2,10 @@ import mongoose from "mongoose";
 
 /**
  * Trip-scoped rating.
- * Phase 1: converted from the legacy Ride reference to Trip. Because a trip
- * has one host and many passengers, the unique key is (trip, fromUser, toUser)
- * so a host can rate each passenger and each passenger can rate the host once.
+ *
+ * Each rating is mapped to a specific trip, fromUser, and toUser.
+ * This structure allows a host to rate each passenger and each passenger
+ * to rate the host once per trip.
  */
 const ratingSchema = new mongoose.Schema(
   {
