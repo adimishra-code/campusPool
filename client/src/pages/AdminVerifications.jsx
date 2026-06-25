@@ -4,13 +4,12 @@ import api from "../services/api.js";
 import Spinner from "../components/Spinner.jsx";
 import EmptyState from "../components/EmptyState.jsx";
 import MetricCard from "../components/MetricCard.jsx";
+import TeamAccess from "../components/TeamAccess.jsx";
 
 const API = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
 
 function DocLink({ url, label }) {
   if (!url) return null;
-  // Documents are streamed by the API (auth required); open with the bearer token via a new tab is
-  // limited, so we link to the absolute API path for admins who are authenticated in-session.
   const href = url.startsWith("http") ? url : `${API.replace(/\/api$/, "")}${url}`;
   return (
     <a className="link-button" href={href} target="_blank" rel="noreferrer">
@@ -66,7 +65,7 @@ export default function AdminVerifications() {
     return (
       <div className="page">
         <EmptyState
-          icon="🛡️"
+          icon="Admin"
           title="Admins only"
           hint="This panel is restricted to administrators."
         />
@@ -97,17 +96,19 @@ export default function AdminVerifications() {
         </div>
       </header>
 
+      <TeamAccess />
+
       {sosEvents.length > 0 && (
         <section className="panel">
-          <p className="eyebrow">🚨 Active SOS</p>
+          <p className="eyebrow">Active SOS</p>
           <div className="list">
             {sosEvents.map((e) => (
               <article key={e._id} className="queue-row sos-row">
                 <div>
                   <strong>{e.user?.name || "Member"}</strong>
                   <small>
-                    {e.user?.phone || "—"}
-                    {e.trip ? ` · ${e.trip.pickup?.address} → ${e.trip.destination?.address}` : ""}
+                    {e.user?.phone || "�"}
+                    {e.trip ? ` - ${e.trip.pickup?.address} to ${e.trip.destination?.address}` : ""}
                   </small>
                 </div>
                 <button className="secondary sm" onClick={() => resolveSos(e._id)}>
@@ -152,11 +153,11 @@ export default function AdminVerifications() {
       </div>
 
       {msg && <div className="alert info">{msg}</div>}
-      {loading && <Spinner label="Loading queue…" />}
+      {loading && <Spinner label="Loading queue..." />}
 
       {!loading && items.length === 0 && (
         <EmptyState
-          icon="✅"
+          icon="Check"
           title={`No pending ${tab === "student" ? "students" : "vehicles"}`}
           hint="The queue is clear."
         />
@@ -168,8 +169,8 @@ export default function AdminVerifications() {
             <div>
               <strong>{v.user?.name || "User"}</strong>
               <small>
-                {v.user?.email} · {v.user?.role}
-                {v.user?.hostel ? ` · ${v.user.hostel}` : ""}
+                {v.user?.email} - {v.user?.role}
+                {v.user?.hostel ? ` - ${v.user.hostel}` : ""}
               </small>
               <div className="doc-links">
                 {tab === "student" && (

@@ -6,7 +6,7 @@ import User from "../models/User.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { notifyUser } from "../services/notification.service.js";
 import { recomputeSafetyScore } from "../services/safety.service.js";
-import { sendSmsBulk } from "../services/sms.service.js";
+import { sendSafetyAlertEmail } from "../services/email.service.js";
 import { signShareToken, verifyShareToken } from "../utils/token.js";
 import { env } from "../config/env.js";
 
@@ -89,14 +89,17 @@ export const triggerSos = asyncHandler(async (req, res) => {
     io.to(`trip:${trip._id}`).emit("sos:alert", alert);
   }
 
-  // Text the emergency contacts (real delivery via Twilio when configured,
-  // otherwise logged). Fire-and-forget so the response isn't blocked on SMS.
+  // Email the user and campus operations (real delivery via SMTP when
+  // configured, otherwise logged). Fire-and-forget so the response isn't
+  // blocked on mail delivery.
   if (contacts.length) {
     const where = location ? ` Last location: ${location[1]}, ${location[0]}.` : "";
-    sendSmsBulk(
-      contacts.map((c) => c.phone),
-      `CampusPool SOS: ${req.user.name} raised an emergency alert on a shared trip.${where}`
-    ).catch(() => {});
+    const body = `${req.user.name} raised an emergency SOS alert on a shared CampusPool trip.${where}`;
+    sendSafetyAlertEmail([req.user.email, env.supportEmail], {
+      subject: `🚨 CampusPool SOS — ${req.user.name}`,
+      text: body,
+      html: `<p><strong>🚨 CampusPool SOS alert</strong></p><p>${body}</p>`
+    }).catch(() => {});
   }
 
   res.status(201).json({

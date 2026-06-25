@@ -120,11 +120,11 @@ verificationSchema.index({ "vehicleVerification.overallStatus": 1 });
 verificationSchema.index({ status: 1 });
 verificationSchema.index({ createdAt: -1 });
 
-// Virtual for overall verification progress
 verificationSchema.virtual("progress").get(function () {
   let completed = 0;
-  let total = 2; // studentId + identityProof
+  let total = 3; // email + studentId + identityProof
 
+  if (this.collegeEmail?.verified) completed++;
   if (this.studentId?.status === "approved") completed++;
   if (this.identityProof?.status === "approved") completed++;
 

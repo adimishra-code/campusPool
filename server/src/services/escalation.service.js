@@ -1,7 +1,7 @@
 import Trip from "../models/Trip.js";
 import { env } from "../config/env.js";
 import { notifyUser } from "./notification.service.js";
-import { sendSmsBulk } from "./sms.service.js";
+import { sendSafetyAlertEmail } from "./email.service.js";
 
 // Expected arrival = explicit arrivalTime, else departureTime + planned duration.
 function expectedArrival(trip) {
@@ -25,8 +25,8 @@ export async function runArrivalEscalation({ io, now = new Date() } = {}) {
     "safety.arrivalEscalatedAt": { $exists: false },
     departureTime: { $lte: now }
   })
-    .populate("host", "name phone emergencyContacts")
-    .populate("passengers.user", "name emergencyContacts");
+    .populate("host", "name email emergencyContacts")
+    .populate("passengers.user", "name email emergencyContacts");
 
   let escalated = 0;
 
@@ -57,14 +57,14 @@ export async function runArrivalEscalation({ io, now = new Date() } = {}) {
       });
     }
 
-    // SMS the emergency contacts of every participant.
-    const contactPhones = participants.flatMap((u) =>
-      (u.emergencyContacts || []).map((c) => c.phone)
-    );
-    await sendSmsBulk(
-      contactPhones,
-      `CampusPool safety alert: no safe-arrival confirmation for a trip (${route}). Please check in on them.`
-    );
+    // Email every participant and campus operations.
+    const participantEmails = participants.map((u) => u.email).filter(Boolean);
+    const body = `No one confirmed safe arrival for a CampusPool trip (${route}). Please check in on them.`;
+    await sendSafetyAlertEmail(participantEmails.concat(env.supportEmail), {
+      subject: "⚠️ CampusPool safe-arrival check",
+      text: body,
+      html: `<p><strong>⚠️ Safe-arrival check</strong></p><p>${body}</p>`
+    });
 
     trip.safety.arrivalEscalatedAt = now;
     await trip.save();

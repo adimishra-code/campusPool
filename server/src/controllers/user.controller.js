@@ -85,6 +85,23 @@ export const updateProfile = asyncHandler(async (req, res) => {
   });
 });
 
+// Upgrade the signed-in student to a host. Self-service is safe: hosting still
+// requires an admin-approved vehicle before they can actually offer rides
+// (canOfferRides() checks role === "host" AND verified). Admins are left as-is.
+export const becomeHost = asyncHandler(async (req, res) => {
+  if (req.user.role === "student") {
+    req.user.role = "host";
+    await req.user.save();
+    await AuditLog.log("user.profile.update", "User", req.user._id, req.user._id, {
+      roleChange: "student->host"
+    });
+  }
+  res.json({
+    message: "You're a host now — verify a vehicle to start offering rides.",
+    role: req.user.role
+  });
+});
+
 // Update preferences
 export const updatePreferences = asyncHandler(async (req, res) => {
   const { preferences } = req.body;
@@ -318,5 +335,36 @@ export const adminUpdateUser = asyncHandler(async (req, res) => {
       verificationStatus: user.verificationStatus,
       isActive: user.isActive
     }
+  });
+});
+
+export const promoteRules = [body("email").trim().isEmail().withMessage("Enter a valid email")];
+
+// ADMIN: grant admin rights to an existing user, by email. Creating admins is a
+// privileged, audited action with no self-service path — this is the only way
+// to mint a new admin from the app.
+export const promoteToAdmin = asyncHandler(async (req, res) => {
+  const email = String(req.body.email || "").toLowerCase();
+  const user = await User.findOne({ email });
+  if (!user) {
+    const error = new Error("No user found with that email");
+    error.statusCode = 404;
+    throw error;
+  }
+
+  const alreadyAdmin = user.role === "admin";
+  if (!alreadyAdmin) {
+    user.role = "admin";
+    await user.save();
+    await AuditLog.log("admin.user.update", "User", user._id, req.user._id, {
+      action: "promote_admin"
+    });
+  }
+
+  res.json({
+    message: alreadyAdmin
+      ? `${user.name} is already an admin.`
+      : `${user.name} is now an admin.`,
+    user: { id: user._id, name: user.name, email: user.email, role: user.role }
   });
 });

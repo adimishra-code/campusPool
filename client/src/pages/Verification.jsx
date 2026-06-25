@@ -16,7 +16,9 @@ function Step({ label, done }) {
 export default function Verification() {
   const dispatch = useDispatch();
   const { user } = useSelector((s) => s.auth);
-  const isHost = user?.role === "host";
+  // Hosts verify their vehicle here; admins can too (so a single admin account
+  // can exercise the full vehicle flow end-to-end).
+  const isHost = user?.role === "host" || user?.role === "admin";
 
   const [v, setV] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -114,7 +116,7 @@ export default function Verification() {
   );
 
   return (
-    <div className="page">
+    <div className="page verify-page">
       <header className="page-head">
         <div>
           <p className="eyebrow">Trust & safety</p>
@@ -175,10 +177,18 @@ export default function Verification() {
         <div className="section-head">
           <p className="eyebrow">Student verification</p>
         </div>
+        <p className="muted-text">
+          Upload both documents — we confirm your enrolment and your identity together.
+        </p>
         <div className="upload-grid">
           <div className="upload-card">
-            <strong>Student ID card</strong>
-            {statusTag(v?.studentId?.status)}
+            <div className="upload-card-head">
+              <strong>Student ID card</strong>
+              {statusTag(v?.studentId?.status)}
+            </div>
+            <small className="upload-hint">
+              Your campus-issued student ID card — confirms you&apos;re enrolled.
+            </small>
             {v?.studentId?.rejectionReason && (
               <small className="field-error">{v.studentId.rejectionReason}</small>
             )}
@@ -189,8 +199,14 @@ export default function Verification() {
             />
           </div>
           <div className="upload-card">
-            <strong>College ID</strong>
-            {statusTag(v?.identityProof?.status)}
+            <div className="upload-card-head">
+              <strong>Identity proof</strong>
+              {statusTag(v?.identityProof?.status)}
+            </div>
+            <small className="upload-hint">
+              A government or college photo ID (Aadhaar, passport, licence, or college ID) to
+              confirm it&apos;s you.
+            </small>
             {v?.identityProof?.rejectionReason && (
               <small className="field-error">{v.identityProof.rejectionReason}</small>
             )}

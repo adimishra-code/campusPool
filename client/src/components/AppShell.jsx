@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
-import { Link, NavLink, Outlet, useLocation } from "react-router-dom";
+import { Link, NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
-import { fetchMe, logoutUser } from "../store/authSlice.js";
+import { fetchMe, logoutUser, becomeHost } from "../store/authSlice.js";
 import { toggleTheme } from "../store/themeSlice.js";
 import { notificationsReset } from "../store/notificationSlice.js";
 import NotificationBell from "./NotificationBell.jsx";
@@ -42,11 +42,24 @@ function initials(name = "") {
 
 export default function AppShell() {
   const dispatch = useDispatch();
+  const navigate = useNavigate();
   const { user } = useSelector((state) => state.auth);
   const mode = useSelector((state) => state.theme.mode);
   const location = useLocation();
   // Mobile overflow sheet (secondary nav + settings). Desktop uses the sidebar.
   const [menuOpen, setMenuOpen] = useState(false);
+
+  // Become a host: flip the role immediately, then guide them to vehicle
+  // verification (they can only offer rides once a vehicle is approved).
+  const onBecomeHost = async () => {
+    try {
+      await dispatch(becomeHost()).unwrap();
+      await dispatch(fetchMe());
+      navigate("/verify");
+    } catch {
+      /* surfaced as a no-op; user can retry */
+    }
+  };
 
   // Keep profile/verification badge fresh on shell mount.
   useEffect(() => {
@@ -76,7 +89,7 @@ export default function AppShell() {
           {initials(user?.name)}
         </span>
         <div>
-          <strong>{user?.name || "Student"}</strong>
+          <strong className="account-name">{user?.name || "Student"}</strong>
           <small className="role-line">
             {user?.role === "host" ? "Host" : "Student"}
             <span className={`vbadge ${badge.tone}`}>{badge.text}</span>
@@ -84,6 +97,12 @@ export default function AppShell() {
         </div>
       </div>
       <div className="account-actions">
+        {user?.role === "student" && (
+          <button className="become-host" onClick={onBecomeHost}>
+            <Icon name="offer" size={16} />
+            Become a host
+          </button>
+        )}
         <button onClick={() => dispatch(toggleTheme())}>
           <Icon name={mode === "light" ? "moon" : "sun"} size={16} />
           {mode === "light" ? "Dark" : "Light"} mode

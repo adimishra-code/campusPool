@@ -46,9 +46,6 @@ services:
       SMTP_USER: ${SMTP_USER:-}
       SMTP_PASS: ${SMTP_PASS:-}
       SMTP_FROM: ${SMTP_FROM:-CampusPool <no-reply@campuspool.app>}
-      TWILIO_ACCOUNT_SID: ${TWILIO_ACCOUNT_SID:-}
-      TWILIO_AUTH_TOKEN: ${TWILIO_AUTH_TOKEN:-}
-      TWILIO_FROM_NUMBER: ${TWILIO_FROM_NUMBER:-}
     ports:
       - "5000:5000"
     depends_on:

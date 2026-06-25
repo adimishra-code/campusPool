@@ -35,9 +35,14 @@ export default function Profile() {
   }, [dispatch]);
 
   useEffect(() => {
-    if (user)
-      setForm({ name: user.name || "", hostel: user.hostel || "", upiId: user.upiId || "" });
-  }, [user?.name, user?.hostel, user?.upiId]);
+    if (!user) return;
+
+    setForm({
+      name: user.name || "",
+      hostel: user.hostel || "",
+      upiId: user.upiId || ""
+    });
+  }, [user]);
 
   if (!loaded && !user) return <Spinner label="Loading profile…" />;
 
@@ -95,7 +100,7 @@ export default function Profile() {
   };
 
   return (
-    <div className="page">
+    <div className="page profile-page">
       <header className="page-head">
         <div>
           <p className="eyebrow">Account</p>
@@ -152,7 +157,10 @@ export default function Profile() {
         </div>
         {!isVerified && (
           <div className="verify-cta">
-            <span>Get your trust badge — verify your email and student ID.</span>
+            <div className="verify-cta-text">
+              <strong>Get your trust badge</strong>
+              <span>Verify your email and student ID to earn a verified badge.</span>
+            </div>
             <Link className="primary" to="/verify">
               Verify now
             </Link>

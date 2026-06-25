@@ -61,9 +61,12 @@ function GoogleG() {
 
 export default function Login() {
   const dispatch = useDispatch();
-  const { authenticated, status, error } = useSelector((state) => state.auth);
+  const { authenticated, status, error, user } = useSelector((state) => state.auth);
   const [params, setParams] = useSearchParams();
   const [mode, setMode] = useState("login");
+  // Cosmetic login segmentation. Role is ALWAYS decided server-side by the
+  // account — this only adjusts copy and where the user lands after sign-in.
+  const [loginAs, setLoginAs] = useState("student");
   const [step, setStep] = useState(1); // register-only progressive disclosure
   const [form, setForm] = useState(EMPTY);
   const [touched, setTouched] = useState(false);
@@ -89,7 +92,8 @@ export default function Login() {
     }
   }, [params, dispatch, setParams]);
 
-  if (authenticated) return <Navigate to="/feed" replace />;
+  if (authenticated)
+    return <Navigate to={user?.role === "admin" ? "/admin/verifications" : "/feed"} replace />;
 
   const loading = status === "loading";
   const set = (k) => (e) => setForm({ ...form, [k]: e.target.value });
@@ -274,6 +278,29 @@ export default function Login() {
         {/* ---- LOGIN ---- */}
         {mode === "login" && (
           <>
+            <div className="auth-role-tabs" role="tablist" aria-label="Sign in as">
+              {[
+                { k: "student", label: "Student" },
+                { k: "host", label: "Host" },
+                { k: "admin", label: "Admin" }
+              ].map((t) => (
+                <button
+                  key={t.k}
+                  type="button"
+                  role="tab"
+                  aria-selected={loginAs === t.k}
+                  className={`auth-role-tab ${loginAs === t.k ? "active" : ""}`}
+                  onClick={() => setLoginAs(t.k)}
+                >
+                  {t.label}
+                </button>
+              ))}
+            </div>
+            {loginAs === "admin" && (
+              <p className="auth-role-note">
+                Admin access is granted by your campus team — sign in with your normal credentials.
+              </p>
+            )}
             <Field
               id="email"
               label="Email"
@@ -385,6 +412,9 @@ export default function Login() {
               <option value="student">Join trips as a student</option>
               <option value="host">Offer trips as a host</option>
             </Field>
+            <p className="auth-role-note">
+              Admin accounts aren&apos;t self-served — they&apos;re provisioned by your campus team.
+            </p>
           </>
         )}
 
@@ -482,7 +512,10 @@ export default function Login() {
             </button>
           )}
 
-          {GOOGLE_ENABLED && ["login", "register"].includes(mode) && step === 1 && (
+          {GOOGLE_ENABLED &&
+            ["login", "register"].includes(mode) &&
+            step === 1 &&
+            !(mode === "login" && loginAs === "admin") && (
             <>
               <div className="auth-divider">or</div>
               <button

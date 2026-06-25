@@ -65,6 +65,18 @@ export async function sendPasswordResetEmail(to, rawToken) {
   return sendMail({ to, subject, text, html });
 }
 
+// Fan a safety / SOS alert out to several recipients by email. Never throws, so
+// it's safe to fire-and-forget from request handlers and the escalation loop.
+export async function sendSafetyAlertEmail(recipients, { subject, text, html }) {
+  const unique = [...new Set((recipients || []).filter(Boolean))];
+  const results = await Promise.all(
+    unique.map((to) =>
+      sendMail({ to, subject, text, html }).catch(() => ({ delivered: false }))
+    )
+  );
+  return { sent: results.filter((r) => r.delivered).length, total: unique.length };
+}
+
 // Notify the support inbox about a new ticket/feedback/bug report.
 export async function sendSupportEmail({ subject, text, html }) {
   return sendMail({ to: env.supportEmail, subject, text, html });

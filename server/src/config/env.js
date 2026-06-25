@@ -1,6 +1,22 @@
 import dotenv from "dotenv";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 
-dotenv.config();
+// dotenv reads ./.env relative to process.cwd(), but the server is commonly
+// started with cwd=server/ (e.g. `npm run dev --prefix server`), where no .env
+// exists — so the repo-root .env was silently ignored and every var fell back
+// to its code default. Resolve the root .env by this module's location instead,
+// so config loads no matter where the process is launched from.
+// Don't load developer .env files under test: the suite must run on clean code
+// defaults (dev previewOtp flow, test JWT secret, mail NOT configured) regardless
+// of whatever real SMTP/secrets the developer has in their local .env.
+if (process.env.NODE_ENV !== "test") {
+  const rootEnv = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../../.env");
+  dotenv.config({ path: rootEnv });
+  // Also honour a cwd-local .env (e.g. a custom server/.env) without overriding
+  // anything already loaded above. In containers, real env vars take precedence.
+  dotenv.config();
+}
 
 const isProduction = (process.env.NODE_ENV || "development") === "production";
 
@@ -44,17 +60,6 @@ export const env = {
   get googleOAuthConfigured() {
     return Boolean(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET);
   },
-  // Twilio SMS (optional) — SOS / safety alerts to emergency contacts.
-  twilioAccountSid: process.env.TWILIO_ACCOUNT_SID || "",
-  twilioAuthToken: process.env.TWILIO_AUTH_TOKEN || "",
-  twilioFromNumber: process.env.TWILIO_FROM_NUMBER || "",
-  get smsConfigured() {
-    return Boolean(
-      process.env.TWILIO_ACCOUNT_SID &&
-      process.env.TWILIO_AUTH_TOKEN &&
-      process.env.TWILIO_FROM_NUMBER
-    );
-  },
   // Safe-arrival escalation: grace period (minutes) after expected arrival, and
   // how often the scheduler runs (seconds).
   arrivalGraceMinutes: Number(process.env.ARRIVAL_GRACE_MINUTES || 15),
@@ -94,7 +99,7 @@ export function assertRequiredSecrets() {
   if (env.cookieSameSite === "none") {
     problems.push(
       "COOKIE_SAMESITE=none is not supported: this app relies on SameSite for CSRF protection " +
-        "and ships no CSRF tokens. Deploy the SPA and API same-site and use COOKIE_SAMESITE=lax."
+      "and ships no CSRF tokens. Deploy the SPA and API same-site and use COOKIE_SAMESITE=lax."
     );
   }
 

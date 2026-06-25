@@ -40,6 +40,7 @@ export const resendVerification = post("resendVerification", "/auth/resend-verif
 export const verifyLoginOtp = post("verifyLoginOtp", "/auth/login/verify-otp");
 export const forgotPassword = post("forgotPassword", "/auth/forgot-password");
 export const resetPassword = post("resetPassword", "/auth/reset-password");
+export const becomeHost = post("becomeHost", "/users/me/become-host");
 
 export const setTwoFactor = createAsyncThunk(
   "auth/setTwoFactor",
@@ -118,10 +119,17 @@ const authSlice = createSlice({
       });
     });
 
-    builder
-      .addCase(register.fulfilled, (state) => {
+    // Non-session successes (no token issued): clear the loading state so the
+    // submit button doesn't stick on "Please wait…". Without a .fulfilled case,
+    // .pending leaves status at "loading" and a successful 200 never resets it
+    // (this was the reset-password / forgot-password "stuck" bug).
+    [register, forgotPassword, resetPassword].forEach((thunk) => {
+      builder.addCase(thunk.fulfilled, (state) => {
         state.status = "succeeded";
-      })
+      });
+    });
+
+    builder
       .addCase(setTwoFactor.fulfilled, (state, { payload }) => {
         if (state.user) state.user = { ...state.user, twoFactorEnabled: payload.twoFactorEnabled };
       })

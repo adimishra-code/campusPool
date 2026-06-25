@@ -10,8 +10,7 @@ import { signToken, generateResetToken, hashResetToken } from "../utils/token.js
 import { setAuthCookie, clearAuthCookie } from "../utils/cookies.js";
 import { issueOtp } from "./verification.controller.js";
 import { env } from "../config/env.js";
-import { sendSms } from "../services/sms.service.js";
-import { sendLoginOtpEmail, sendPasswordResetEmail } from "../services/email.service.js";
+import { sendLoginOtpEmail, sendPasswordResetEmail, sendOtpEmail } from "../services/email.service.js";
 
 // Max wrong guesses for a single OTP code before it is invalidated.
 const MAX_OTP_ATTEMPTS = 5;
@@ -407,16 +406,15 @@ export const requestOtp = asyncHandler(async (req, res) => {
     throw error;
   }
 
-  if (env.smsConfigured) {
-    await sendSms({ to: phone, body: `Your CampusPool verification code is ${code}` }).catch(
-      () => {}
-    );
+  // Deliver the code to the account's email (SMS removed — email-only via SMTP).
+  if (env.mailConfigured) {
+    await sendOtpEmail(user.email, code).catch(() => {});
   }
 
-  // Only echo the code back when SMS isn't configured AND we're not in
+  // Only echo the code back when email isn't configured AND we're not in
   // production — never leak OTPs to clients in a live deployment.
-  const previewOtp = !env.smsConfigured && env.nodeEnv !== "production" ? code : undefined;
-  res.json({ message: "Verification code sent", previewOtp });
+  const previewOtp = !env.mailConfigured && env.nodeEnv !== "production" ? code : undefined;
+  res.json({ message: "Verification code sent to your registered email", previewOtp });
 });
 
 // Verify phone OTP

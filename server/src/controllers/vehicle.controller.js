@@ -76,27 +76,30 @@ export const registerVehicle = asyncHandler(async (req, res) => {
     plateNumber
   });
 
-  // Create or update verification record with vehicle info
+  // Create or update verification record with vehicle info, and enqueue the
+  // vehicle for admin review immediately so it appears in the Pending Vehicles
+  // queue right after registration. Documents can be attached now or uploaded
+  // later via /verify (uploadVehicleDocument) / POST /vehicles/:id/documents.
   let verification = await Verification.findOne({ user: req.user._id });
   if (!verification) {
     verification = new Verification({ user: req.user._id });
   }
 
-  // If user submitted vehicle docs earlier, link them
-  if (req.body.documents) {
-    verification.vehicleVerification = {
-      vehicle: vehicle._id,
-      documents: [
+  const documents = req.body.documents
+    ? [
         { type: "rc", url: req.body.documents.rc, status: "pending" },
         { type: "insurance", url: req.body.documents.insurance, status: "pending" },
         { type: "pollution", url: req.body.documents.pollution, status: "pending" }
-      ],
-      overallStatus: "pending"
-    };
-    vehicle.verificationStatus = "pending";
-    await vehicle.save();
-  }
+      ]
+    : verification.vehicleVerification?.documents || [];
 
+  verification.vehicleVerification = {
+    vehicle: vehicle._id,
+    documents,
+    overallStatus: "pending"
+  };
+  vehicle.verificationStatus = "pending";
+  await vehicle.save();
   await verification.save();
 
   res.status(201).json({

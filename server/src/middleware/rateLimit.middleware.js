@@ -2,28 +2,24 @@ import rateLimit from "express-rate-limit";
 import { env } from "../config/env.js";
 import { makeRateLimitStore } from "../config/redis.js";
 
-// Strict limiter for credential/OTP endpoints (login, register, OTP request) to
-// blunt credential stuffing and OTP spam. Applied per-route — NOT to the whole
-// /api/auth router — so frequent authed reads like GET /me aren't throttled.
-// Disabled under tests; threshold tunable via AUTH_RATE_LIMIT. Backed by Redis
-// when REDIS_URL is set (shared across replicas), else an in-memory store.
+// Strict limiter for credential/OTP endpoints
 export const authLimiter =
   env.nodeEnv === "test"
     ? (_req, _res, next) => next()
     : rateLimit({
-        windowMs: 15 * 60 * 1000,
-        limit: env.authRateLimit,
-        standardHeaders: true,
-        legacyHeaders: false,
-        store: makeRateLimitStore("auth"),
-        message: { message: "Too many attempts. Please try again later." }
-      });
+      windowMs: 15 * 60 * 1000,
+      limit: env.authRateLimit,
+      standardHeaders: true,
+      legacyHeaders: false,
+      store: makeRateLimitStore("auth"),
+      message: { message: "Too many attempts. Please try again later." }
+    });
 
-// Factory so every sensitive endpoint gets its own per-IP bucket. Bypassed under
-// tests (where express-rate-limit's in-memory store would leak across cases).
-// `suffix` namespaces the bucket in Redis so limiters don't share counts.
 function makeLimiter({ windowMs, limit, message, suffix }) {
-  if (env.nodeEnv === "test") return (_req, _res, next) => next();
+  if (env.nodeEnv === "test") {
+    return (_req, _res, next) => next();
+  }
+
   return rateLimit({
     windowMs,
     limit,
@@ -34,8 +30,6 @@ function makeLimiter({ windowMs, limit, message, suffix }) {
   });
 }
 
-// Password-attempt guard: tighter than authLimiter and layered ON TOP of the
-// per-account lockout (User.registerFailedLogin) for defense in depth.
 export const loginLimiter = makeLimiter({
   windowMs: 15 * 60 * 1000,
   limit: env.loginRateLimit,
@@ -43,7 +37,6 @@ export const loginLimiter = makeLimiter({
   message: "Too many login attempts. Please try again later."
 });
 
-// Forgot/reset password — low cap per IP per hour to blunt token guessing & spam.
 export const passwordResetLimiter = makeLimiter({
   windowMs: 60 * 60 * 1000,
   limit: env.passwordResetRateLimit,
@@ -51,8 +44,6 @@ export const passwordResetLimiter = makeLimiter({
   message: "Too many password reset requests. Please try again later."
 });
 
-// OTP verification attempts (email verify, login 2FA, phone) — paired with the
-// per-code attempt cap that invalidates a code after repeated wrong guesses.
 export const otpVerifyLimiter = makeLimiter({
   windowMs: 15 * 60 * 1000,
   limit: env.otpVerifyRateLimit,
@@ -60,7 +51,6 @@ export const otpVerifyLimiter = makeLimiter({
   message: "Too many verification attempts. Please request a new code."
 });
 
-// Re-sending OTPs (resend verification) — keep it scarce to prevent mail bombing.
 export const otpRequestLimiter = makeLimiter({
   windowMs: 15 * 60 * 1000,
   limit: env.otpRequestRateLimit,

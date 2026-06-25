@@ -5,6 +5,7 @@ import {
   updatePreferences,
   getUserTrips,
   getTrustScore,
+  becomeHost,
   addEmergencyContact,
   removeEmergencyContact,
   deactivateAccount,
@@ -23,6 +24,7 @@ router.get("/me", protect, getUser);
 router.patch("/me", protect, validate(updateProfileRules), updateProfile);
 router.patch("/me/preferences", protect, validate(updatePreferencesRules), updatePreferences);
 router.get("/me/trips", protect, getUserTrips);
+router.post("/me/become-host", protect, becomeHost);
 router.post("/me/emergency-contacts", protect, addEmergencyContact);
 router.delete("/me/emergency-contacts/:contactId", protect, removeEmergencyContact);
 router.delete("/me", protect, deactivateAccount);

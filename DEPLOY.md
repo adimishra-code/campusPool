@@ -70,9 +70,9 @@ sent, the browser must treat the frontend and API as compatible origins:
 - Settlement is peer-to-peer between students (cash, or the host's UPI QR/intent).
   There is no payment gateway to configure — hosts add their own UPI VPA in-app.
 
-### Twilio (optional, SOS SMS)
+### SOS / safety alerts
 
-- Set `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_FROM_NUMBER`.
+- Delivered by email via the `SMTP_*` settings. No SMS provider required.
 
 ---
 

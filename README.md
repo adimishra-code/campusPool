@@ -160,7 +160,6 @@ Server (`server/.env`) — see [`.env.example`](.env.example) for the full list:
 | `SMTP_HOST/PORT/USER/PASS/FROM`                           |     –     | Email OTPs (dev surfaces `previewOtp` if unset)               |
 | `SUPPORT_EMAIL`                                           |     –     | Inbox for support / bug reports                               |
 | `GOOGLE_CLIENT_ID/SECRET/CALLBACK_URL`                    |     –     | Google OAuth (auto-enabled when set)                          |
-| `TWILIO_ACCOUNT_SID/AUTH_TOKEN/FROM_NUMBER`               |     –     | SOS SMS (no-ops if unset)                                     |
 | `ARRIVAL_GRACE_MINUTES` / `ARRIVAL_SCAN_INTERVAL_SECONDS` |     –     | Safe-arrival escalation tuning                                |
 | `GOOGLE_MAPS_API_KEY`                                     |     –     | Server-side Maps (Directions/Geocoding)                       |
 

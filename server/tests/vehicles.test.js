@@ -25,7 +25,8 @@ describe("Vehicles (owner)", () => {
       .set(...bearer(token))
       .send(sampleVehicle());
     expect(created.status).toBe(201);
-    expect(created.body.vehicle.verificationStatus).toBe("unverified");
+    // Registration now enqueues the vehicle for admin review immediately.
+    expect(created.body.vehicle.verificationStatus).toBe("pending");
 
     const mine = await agent()
       .get("/api/vehicles")

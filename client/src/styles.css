@@ -15,6 +15,7 @@
   --teal: #0b8f7a;
   --danger: #b7352d;
   --warn: #b07a00;
+  --info: #1c5aa6;
 
   /* ---- Brand gradient + glass (expressive accents) ---- */
   --grad-brand: linear-gradient(135deg, #0a7a4b 0%, #0b8f7a 55%, #12a567 100%);
@@ -86,22 +87,33 @@ button {
 }
 
 .app.dark,
-.auth-shell.dark {
-  --bg: #0c100e;
-  --surface: #151b17;
-  --surface-soft: #1d251f;
-  --surface-raised: #1b231d;
-  --ink: #f1f6f0;
-  --muted: #9faea2;
-  --line: #2a352c;
-  --accent-soft: rgba(18, 165, 103, 0.16);
-  --grad-brand-soft: linear-gradient(135deg, rgba(18, 165, 103, 0.18), rgba(11, 143, 122, 0.06));
-  --glass-bg: rgba(21, 27, 23, 0.72);
-  --glass-border: rgba(255, 255, 255, 0.08);
-  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.3);
-  --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.36);
-  --shadow-lg: 0 18px 50px rgba(0, 0, 0, 0.46);
-  --shadow-accent: 0 10px 28px rgba(10, 122, 75, 0.4);
+.auth-shell.dark,
+.public-page.dark {
+  color-scheme: dark;
+  /* ---- Neutral slate palette (no green tint) ---- */
+  --bg: #0B0D10;
+  --surface: #111418;
+  --surface-soft: #171C23;
+  --surface-raised: #1A2029;
+  --ink: #F5F7FA;
+  --ink-secondary: #D7DEE7;
+  --ink-tertiary: #B0B9C6;
+  --muted: #8B95A3;
+  --line: #252C36;
+  --line-subtle: #1E242D;
+  /* Status + accent text — stays vibrant for legibility */
+  --accent-dark: #2fb37a;
+  --warn: #e0a93b;
+  --info: #6ab0f3;
+  --danger: #e06a62;
+  --accent-soft: rgba(18, 165, 103, 0.14);
+  --grad-brand-soft: linear-gradient(135deg, rgba(18, 165, 103, 0.08), rgba(11, 143, 122, 0.02));
+  --glass-bg: rgba(11, 13, 16, 0.78);
+  --glass-border: rgba(255, 255, 255, 0.06);
+  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.32);
+  --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.4);
+  --shadow-lg: 0 18px 50px rgba(0, 0, 0, 0.5);
+  --shadow-accent: 0 10px 28px rgba(10, 122, 75, 0.35);
   --shadow: var(--shadow-lg);
 }
 
@@ -115,8 +127,8 @@ button {
 .sidebar {
   display: flex;
   flex-direction: column;
-  gap: 28px;
-  padding: 24px;
+  gap: 24px;
+  padding: 20px 16px;
   border-right: 1px solid var(--line);
   background: var(--surface);
 }
@@ -165,13 +177,14 @@ button {
 .brand span,
 .brand-mark {
   display: grid;
-  width: 44px;
-  height: 44px;
+  width: 38px;
+  height: 38px;
   place-items: center;
-  border-radius: 8px;
+  border-radius: 10px;
   color: #fff;
   background: var(--ink);
   font-weight: 900;
+  font-size: 0.82rem;
 }
 
 .brand small,
@@ -185,29 +198,31 @@ button {
 
 nav {
   display: grid;
-  gap: 8px;
+  gap: 2px;
 }
 
 nav a {
-  padding: 13px 14px;
-  border-radius: 8px;
+  padding: 10px 12px;
+  border-radius: var(--radius-sm);
   color: var(--muted);
-  font-weight: 800;
+  font-weight: 600;
+  font-size: 0.88rem;
   text-decoration: none;
+  position: relative;
 }
 
 nav a.active {
-  color: #fff;
-  background: var(--ink);
+  color: var(--ink);
+  background: var(--surface-soft);
 }
 
 .account-card {
   display: grid;
   gap: 10px;
   margin-top: auto;
-  padding: 16px;
+  padding: 14px;
   border: 1px solid var(--line);
-  border-radius: 8px;
+  border-radius: var(--radius-md);
   background: var(--surface-soft);
 }
 
@@ -268,9 +283,9 @@ nav a.active {
 .eyebrow {
   margin: 0 0 6px;
   color: var(--accent-dark);
-  font-size: 0.76rem;
-  font-weight: 900;
-  letter-spacing: 0.08em;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
   text-transform: uppercase;
 }
 
@@ -383,7 +398,7 @@ select {
   min-height: 620px;
   overflow: hidden;
   border: 1px solid var(--line);
-  border-radius: 8px;
+  border-radius: var(--radius-lg);
   background:
     linear-gradient(135deg, rgba(10, 122, 75, 0.18), transparent 40%),
     linear-gradient(315deg, rgba(18, 23, 19, 0.12), transparent 44%), #e7ece2;
@@ -735,7 +750,7 @@ a.link-button {
 }
 .vbadge.warn {
   background: rgba(183, 122, 0, 0.16);
-  color: #8a5a00;
+  color: var(--warn);
 }
 .vbadge.bad {
   background: rgba(183, 53, 45, 0.16);
@@ -754,6 +769,18 @@ a.link-button {
 }
 .account-head strong {
   display: block;
+}
+/* The username had no color of its own, so it inherited body's computed color
+   — which resolves --ink at :root (the light value) because .app.dark is a
+   descendant <div>, not body. Set it explicitly so the token re-resolves inside
+   the current theme (#0f1512 in light, #F5F7FA in dark). */
+.account-name {
+  color: var(--ink);
+  font-weight: 700;
+  opacity: 1;
+}
+.app.dark .account-name {
+  color: var(--ink);
 }
 .account-actions {
   display: grid;
@@ -931,7 +958,7 @@ a.link-button {
 }
 .pill.warn {
   background: rgba(183, 122, 0, 0.18);
-  color: #8a5a00;
+  color: var(--warn);
 }
 .pill.bad {
   background: rgba(183, 53, 45, 0.16);
@@ -939,7 +966,7 @@ a.link-button {
 }
 .pill.info {
   background: rgba(33, 96, 168, 0.16);
-  color: #1c5aa6;
+  color: var(--info);
 }
 .pill.muted {
   background: var(--surface-soft);
@@ -1183,6 +1210,21 @@ a.link-button {
 .upload-card input[type="file"] {
   font-size: 0.82rem;
 }
+.upload-card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.upload-card strong {
+  font-size: 0.92rem;
+  color: var(--ink);
+}
+.upload-hint {
+  color: var(--muted);
+  font-size: 0.8rem;
+  line-height: 1.35;
+}
 
 .verify-cta {
   display: flex;
@@ -1195,6 +1237,18 @@ a.link-button {
   border-radius: 12px;
   background: rgba(10, 122, 75, 0.08);
   border: 1px solid rgba(10, 122, 75, 0.25);
+}
+.verify-cta-text {
+  display: grid;
+  gap: 2px;
+}
+.verify-cta-text strong {
+  color: var(--ink);
+  font-size: 0.95rem;
+}
+.verify-cta-text span {
+  color: var(--muted);
+  font-size: 0.85rem;
 }
 
 .queue-row {
@@ -1440,10 +1494,13 @@ a.link-button {
 .notif-menu {
   position: absolute;
   top: 110%;
-  right: 0;
+  /* The bell sits in the left sidebar, so anchoring the menu's right edge to it
+     pushed a 320px panel off the left of the screen. Open rightward into the
+     content area instead, and clamp the width so it never exceeds the viewport. */
+  left: 0;
+  right: auto;
   z-index: 50;
-  width: 320px;
-  max-width: 80vw;
+  width: min(320px, calc(100vw - 32px));
   background: var(--surface);
   border: 1px solid var(--line);
   border-radius: 10px;
@@ -1476,7 +1533,7 @@ a.link-button {
   cursor: pointer;
 }
 .notif-item:hover {
-  background: rgba(0, 0, 0, 0.04);
+  background: var(--surface-soft);
 }
 .notif-item.unread {
   background: rgba(10, 122, 75, 0.08);
@@ -1641,7 +1698,7 @@ textarea:focus {
 nav a {
   display: flex;
   align-items: center;
-  gap: 11px;
+  gap: 10px;
   transition:
     background var(--dur) var(--ease),
     color var(--dur) var(--ease),
@@ -1649,6 +1706,10 @@ nav a {
 }
 .nav-icon {
   margin-right: 0;
+  display: inline-flex;
+  align-items: center;
+  color: inherit;
+  transition: color var(--dur) var(--ease);
 }
 nav a:hover {
   background: var(--surface-soft);
@@ -1658,7 +1719,7 @@ nav a:active {
   transform: scale(0.98);
 }
 nav a.active {
-  box-shadow: var(--shadow-sm);
+  box-shadow: none;
 }
 
 /* ---- Notification bell ---- */
@@ -2634,6 +2695,47 @@ nav a.active {
   color: #fff;
 }
 
+/* Login role segmentation (Student / Host / Admin) — cosmetic entry points. */
+.auth-role-tabs {
+  display: flex;
+  gap: 4px;
+  padding: 4px;
+  background: var(--surface-soft);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+}
+.auth-role-tab {
+  flex: 1;
+  padding: 8px 12px;
+  border: none;
+  background: none;
+  border-radius: 999px;
+  font-weight: 700;
+  font-size: 0.85rem;
+  color: var(--muted);
+  cursor: pointer;
+  transition:
+    background var(--dur) var(--ease),
+    color var(--dur) var(--ease);
+}
+.auth-role-tab.active {
+  background: var(--surface);
+  color: var(--ink);
+  box-shadow: var(--shadow-sm);
+}
+.auth-role-note {
+  margin: 0;
+  font-size: 0.8rem;
+  line-height: 1.4;
+  color: var(--muted);
+}
+
+/* "Become a host" account-menu action — accent it slightly. */
+.account-actions .become-host {
+  color: var(--accent-dark);
+  font-weight: 700;
+}
+
 /* ---- Fields ---- */
 .auth-field {
   display: grid;
@@ -2997,6 +3099,16 @@ nav a.active {
 .auth-shell .auth-sub {
   color: var(--auth-muted);
 }
+
+/* Fix auth tabs in dark mode so the active tab isn't black */
+.auth-shell.dark .auth-role-tabs {
+  background: rgba(0, 0, 0, 0.3);
+  border-color: var(--auth-card-border);
+}
+.auth-shell.dark .auth-role-tab.active {
+  background: var(--auth-line);
+  color: var(--auth-text);
+}
 .auth-shell .auth-field > label {
   color: var(--auth-text);
 }
@@ -3252,4 +3364,399 @@ nav a.active {
 .error-boundary-card p {
   margin: 0 0 20px;
   color: var(--muted);
+}
+
+/* ===================================================================
+   Dark-mode premium overrides — appended last so they win by cascade.
+   Scope: `.app.dark` for the authenticated shell.
+   Design reference: Linear / Vercel / Stripe Dashboard / Notion Dark.
+   =================================================================== */
+
+/* ---- Sidebar: premium dark SaaS feel ---- */
+.app.dark .sidebar {
+  background: var(--bg);
+  border-right-color: var(--line);
+}
+.app.dark .sidebar-header {
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--line-subtle);
+  margin-bottom: 4px;
+}
+.app.dark .brand-mark,
+.app.dark .brand span {
+  background: var(--accent);
+  color: #fff;
+}
+.app.dark .brand strong {
+  color: var(--ink);
+  font-size: 0.96rem;
+}
+.app.dark .brand small {
+  color: var(--muted);
+  font-size: 0.74rem;
+}
+
+/* Nav links: muted slate, slim weight */
+.app.dark nav a {
+  color: var(--muted);
+  font-weight: 500;
+  border-radius: var(--radius-sm);
+  padding: 9px 12px;
+}
+.app.dark nav a:hover {
+  color: var(--ink-secondary);
+  background: rgba(255, 255, 255, 0.04);
+}
+/* Active: Linear-style — left accent bar, accent icon, white text */
+.app.dark nav a.active {
+  color: var(--ink);
+  background: rgba(255, 255, 255, 0.06);
+  border-left: 3px solid var(--accent);
+  padding-left: 9px;
+  font-weight: 600;
+}
+.app.dark nav a.active .nav-icon {
+  color: var(--accent-dark);
+}
+
+/* Account card: flush with sidebar, subtle border */
+.app.dark .account-card {
+  background: rgba(255, 255, 255, 0.03);
+  border-color: var(--line-subtle);
+}
+.app.dark .account-head strong {
+  color: var(--ink);
+  font-weight: 700;
+  opacity: 1;
+}
+.app.dark .account-card button {
+  border-color: var(--line);
+  color: var(--ink-secondary);
+  background: transparent;
+}
+.app.dark .account-card button:hover {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: var(--muted);
+  color: var(--ink);
+}
+
+/* ---- Typography hierarchy ---- */
+.app.dark h1,
+.app.dark h2 {
+  color: var(--ink);
+  letter-spacing: -0.02em;
+}
+.app.dark .page-head h1 {
+  color: var(--ink);
+}
+.app.dark p {
+  color: var(--ink-secondary);
+}
+.app.dark .muted-text,
+.app.dark small,
+.app.dark .trip-meta small,
+.app.dark .detail-grid small,
+.app.dark .field > span {
+  color: var(--muted);
+}
+/* Labels: brighter than muted for readability */
+.app.dark .field > span,
+.app.dark .auth-field > label {
+  color: var(--ink-tertiary);
+}
+.app.dark .eyebrow {
+  color: var(--accent-dark);
+  opacity: 0.9;
+}
+
+/* ---- Visual depth hierarchy ---- */
+/* Page bg (#0B0D10) → Panel/Card (#111418) → Soft (#171C23) → Raised (#1A2029)
+   Subtle 1px borders create the perception of elevation without green tint. */
+.app.dark .panel {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  box-shadow: none;
+}
+.app.dark .trip-card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  box-shadow: none;
+}
+.app.dark .trip-card:hover {
+  border-color: rgba(255, 255, 255, 0.12);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+}
+.app.dark .list article,
+.app.dark .highlight-card {
+  background: var(--surface-soft);
+  border-color: var(--line);
+}
+.app.dark .metric {
+  background: var(--surface-soft);
+  border: 1px solid var(--line-subtle);
+}
+/* Colored metrics: use subtle washes, no green for the base */
+.app.dark .metric.green {
+  background: rgba(18, 165, 103, 0.08);
+  border-color: rgba(18, 165, 103, 0.15);
+}
+.app.dark .metric.amber {
+  background: rgba(224, 169, 59, 0.08);
+  border-color: rgba(224, 169, 59, 0.15);
+}
+.app.dark .metric.red {
+  background: rgba(224, 106, 98, 0.08);
+  border-color: rgba(224, 106, 98, 0.15);
+}
+
+/* ---- Inputs / form controls ---- */
+.app.dark input,
+.app.dark select,
+.app.dark textarea {
+  background: var(--bg);
+  border-color: var(--line);
+  color: var(--ink);
+}
+.app.dark input::placeholder {
+  color: var(--muted);
+  opacity: 0.7;
+}
+.app.dark input:hover,
+.app.dark select:hover,
+.app.dark textarea:hover {
+  border-color: rgba(255, 255, 255, 0.15);
+}
+.app.dark input:focus,
+.app.dark select:focus,
+.app.dark textarea:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(10, 122, 75, 0.15);
+}
+
+/* ---- Map panel (fallback): neutral dark surfaces ---- */
+.app.dark .map-panel {
+  background:
+    linear-gradient(135deg, rgba(10, 122, 75, 0.08), transparent 40%),
+    var(--surface);
+}
+.app.dark .map-caption {
+  background: var(--surface-raised);
+  color: var(--ink);
+  border-color: var(--line);
+}
+.app.dark .map-caption small {
+  color: var(--muted);
+}
+.app.dark .grid-lines {
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+}
+
+/* ---- Overlays / sheets: neutral ---- */
+.app.dark .sheet-overlay {
+  background: rgba(0, 0, 0, 0.6);
+}
+.app.dark .sheet {
+  background: var(--surface);
+  border: 1px solid var(--line);
+}
+.app.dark .sheet-grip {
+  background: rgba(255, 255, 255, 0.12);
+}
+.app.dark .bottom-nav {
+  box-shadow: 0 -1px 0 var(--line);
+}
+
+/* ---- Trip card shadows: neutral ---- */
+.app.dark .trip-card {
+  box-shadow: none;
+}
+.app.dark .map-search-row input {
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.4);
+}
+
+/* ---- Skeleton shimmer: neutral ---- */
+.app.dark .skeleton {
+  background:
+    linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.06), transparent), var(--surface-soft);
+}
+
+/* ---- Notifications: neutral unread background ---- */
+.app.dark .notif-item.unread {
+  background: rgba(255, 255, 255, 0.04);
+}
+.app.dark .notif-menu {
+  background: var(--surface-raised);
+  border-color: var(--line);
+}
+
+/* ---- Tabs / pills: neutral ---- */
+.app.dark .tab {
+  background: transparent;
+  border-color: var(--line);
+  color: var(--muted);
+}
+.app.dark .tab.active {
+  background: var(--ink);
+  color: var(--bg);
+  border-color: var(--ink);
+}
+.app.dark .pill.score {
+  background: var(--ink);
+  color: var(--bg);
+}
+
+/* ---- Empty state ---- */
+.app.dark .empty-state {
+  background: var(--surface);
+  border-color: var(--line);
+}
+.app.dark .empty-icon {
+  color: var(--muted);
+}
+
+/* ---- Chat bubbles ---- */
+.app.dark .chat-bubble {
+  background: var(--surface-soft);
+  border-color: var(--line);
+}
+
+/* ---- Toast: neutral base (success keeps brand gradient) ---- */
+.app.dark .toast {
+  background: var(--surface-raised);
+  border: 1px solid var(--line);
+}
+
+/* ---- Verify CTA: subtle accent, not green surface ---- */
+.app.dark .verify-cta {
+  background: rgba(18, 165, 103, 0.06);
+  border-color: rgba(18, 165, 103, 0.18);
+}
+
+/* ---- Estimate row ---- */
+.app.dark .estimate-row {
+  background: var(--surface-soft);
+}
+
+/* ---- Auth page (when used inside .app): neutral gradient ---- */
+.app.dark .auth-page {
+  background:
+    radial-gradient(circle at top left, rgba(18, 165, 103, 0.06), transparent 34%), var(--bg);
+}
+
+/* ---- Alert: neutral info background ---- */
+.app.dark .alert.info {
+  background: rgba(18, 165, 103, 0.06);
+  border-color: rgba(18, 165, 103, 0.18);
+}
+
+/* ---- Profile & verification content text ----
+   Value/heading <strong>s (profile details, contact names, upload-card titles,
+   the verify CTA) carry no explicit color, so they inherited body's computed
+   color — which resolves --ink at :root (the light value) because .app.dark is
+   a descendant <div>. Re-resolve --ink at the element so it's bright in dark.
+   Scoped to these two pages only, leaving other panels untouched. */
+.app.dark .profile-page strong,
+.app.dark .verify-page strong,
+.app.dark .notif strong {
+  color: var(--ink);
+}
+
+/* ---- Upload cards: premium neutral surface, subtle visible border ---- */
+.app.dark .upload-card {
+  background: var(--surface-soft);
+  border-color: var(--line);
+}
+.app.dark .upload-hint {
+  color: var(--ink-tertiary);
+}
+
+/* ---- Match popover ---- */
+.app.dark .match-popover {
+  background: var(--surface-raised);
+  border-color: var(--line);
+}
+
+/* ---- Cookie banner ---- */
+.app.dark .cookie-banner {
+  background: var(--surface-raised);
+  border-color: var(--line);
+}
+
+/* ---- Error boundary ---- */
+.app.dark .error-boundary-card {
+  background: var(--surface);
+  border-color: var(--line);
+}
+
+/* ---- Public pages (legal, support): neutral dark ---- */
+.app.dark ~ .public-page,
+.public-page.dark {
+  background: var(--bg);
+  color: var(--ink);
+}
+.public-page.dark p,
+.public-page.dark li {
+  color: var(--ink-secondary);
+}
+.public-page.dark h1,
+.public-page.dark h2,
+.public-page.dark strong {
+  color: var(--ink);
+}
+
+/* ---- Verification steps: neutral base, green only when done ---- */
+.app.dark .vstep {
+  background: var(--surface-soft);
+  border-color: var(--line);
+  color: var(--muted);
+}
+.app.dark .vstep.done {
+  background: rgba(18, 165, 103, 0.08);
+  border-color: rgba(18, 165, 103, 0.2);
+}
+.app.dark .vstep-dot {
+  background: var(--surface-raised);
+}
+
+/* ---- Lifecycle stepper: neutral ---- */
+.app.dark .lifecycle-step:not(:last-child)::after {
+  background: var(--line);
+}
+.app.dark .lifecycle-dot {
+  background: var(--surface-soft);
+  border-color: var(--line);
+}
+
+/* ---- Safety panel ---- */
+.app.dark .report-form {
+  border-color: var(--line);
+}
+
+/* ---- Payment: keep QR white ---- */
+.app.dark .upi-qr {
+  background: #fff;
+  border-color: var(--line);
+}
+
+/* ---- Bottom tab bar: accent for active ---- */
+.app.dark .bottom-tab.active {
+  color: var(--accent-dark);
+}
+
+/* ---- Match chips: neutral ---- */
+.app.dark .match-chip {
+  background: var(--surface-soft);
+  color: var(--muted);
+}
+
+/* ---- Mobile responsive dark ---- */
+@media (max-width: 980px) {
+  .app.dark .sidebar-header {
+    background: var(--glass-bg);
+    border-bottom-color: var(--line);
+    padding-bottom: 0;
+    margin-bottom: 0;
+  }
 }
