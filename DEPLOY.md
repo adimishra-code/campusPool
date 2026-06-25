@@ -78,14 +78,23 @@ sent, the browser must treat the frontend and API as compatible origins:
 
 ## 2. Configure environment
 
+For **production deployment** (e.g., using Docker Compose):
+
 ```bash
 cp .env.production.example .env
 # Fill in at minimum: CLIENT_URL, MONGO_URI, JWT_SECRET (openssl rand -hex 32),
-# and your SMTP_* settings.
+# and SMTP_* settings.
+```
+
+For **local development** without Docker (refer to the [README.md](README.md) for more details):
+
+```bash
+cp .env.example .env                # Server configuration (root)
+cp client/.env.example client/.env  # Client configuration
 ```
 
 `VITE_*` values are **baked into the frontend at build time**, so set them before
-building the `web` image (they're passed as build args by docker-compose).
+building the `web` image (they are passed as build args by docker-compose, or read from `client/.env` in local development).
 
 ---
 
@@ -118,7 +127,7 @@ The bundled `mongo`/`redis` services are convenient but for real workloads point
 **Frontend** (Vercel / Netlify / Cloudflare Pages):
 
 - Root `client/`, build `npm run build`, output `dist/`.
-- Set `VITE_API_URL`, `VITE_SOCKET_URL` (your API origin), and any maps/OAuth vars.
+- Set `VITE_API_URL`, `VITE_SOCKET_URL` (your API origin), and any maps/OAuth vars (refer to `client/.env.example` for the full list).
 - Serve the SPA and API on the **same registrable domain** (e.g. via a path/subdomain
   reverse-proxy) so the `lax` auth cookie is sent. Split-domain (`SameSite=none`) is
   not supported — see the Cross-site note.

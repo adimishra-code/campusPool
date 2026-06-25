@@ -9,11 +9,6 @@ and a campus network you can actually trust. **Not ride-hailing. Not an Uber clo
 
 React 19 · Redux Toolkit · Vite · Express · MongoDB · Socket.IO · JWT · Docker
 
-[Project Overview](docs/PROJECT_OVERVIEW.md) ·
-[Architecture & Diagrams](docs/ARCHITECTURE.md) ·
-[Project Report](docs/PROJECT_REPORT.md) ·
-[Presentation Guide](docs/PRESENTATION_GUIDE.md)
-
 </div>
 
 ---
@@ -31,16 +26,6 @@ match-scoring engine** (not a flat list), and every trip ships with **safety too
 > trust/reliability scoring, route-based matching and campus-aware safety. It uses
 > the language of **Student · Host · Passenger · Campus · Trip · Verification** — never
 > _driver, rider, surge, taxi_.
-
-## Screenshots
-
-| Sign in (light)                                       | Sign in (dark)                                      | Email verification                                      |
-| ----------------------------------------------------- | --------------------------------------------------- | ------------------------------------------------------- |
-| ![Login light](docs/screenshots/auth-login-light.png) | ![Login dark](docs/screenshots/auth-login-dark.png) | ![Verify email](docs/screenshots/auth-verify-email.png) |
-
-| Trip controls (host)                                         | Trip in progress                                      | Trip completed                                    |
-| ------------------------------------------------------------ | ----------------------------------------------------- | ------------------------------------------------- |
-| ![Trip controls](docs/screenshots/trip-controls-offered.png) | ![In progress](docs/screenshots/trip-in-progress.png) | ![Completed](docs/screenshots/trip-completed.png) |
 
 ## Features
 
@@ -104,9 +89,7 @@ flowchart LR
 
 Three-tier MERN with a real-time layer: a Redux-driven React SPA talks to a **stateless**
 Express API over JSON + an httpOnly auth cookie, and over WebSockets for chat/location/SOS.
-MongoDB is the system of record; Redis backs distributed rate-limiting. Full diagrams
-(auth, trip lifecycle, verification, matching, safety, payments, **ER**) are in
-[`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md).
+MongoDB is the system of record; Redis backs distributed rate-limiting.
 
 ## Folder structure
 
@@ -124,7 +107,6 @@ MongoDB is the system of record; Redis backs distributed rate-limiting. Full dia
 │   └── src/
 │       ├── routes/ controllers/ services/ models/ middleware/ sockets/ config/
 │       └── seed.js         # one-command demo data
-├── docs/                   # OVERVIEW · ARCHITECTURE · REPORT · PRESENTATION · screenshots
 └── docker-compose.yml
 ```
 
@@ -132,7 +114,8 @@ MongoDB is the system of record; Redis backs distributed rate-limiting. Full dia
 
 ```bash
 npm run install:all                 # root + server + client deps
-cp .env.example server/.env         # set MONGO_URI, JWT_SECRET, (optional) SMTP_*
+cp .env.example .env                # set MONGO_URI, JWT_SECRET, (optional) SMTP_* at root
+cp client/.env.example client/.env  # set client API and socket URLs
 npm run seed --prefix server        # demo colleges, users, vehicles, trips
 npm run dev                         # API :5000 + client :5173
 ```
@@ -146,7 +129,7 @@ Demo logins (password `password123`): `admin@univ.edu`, `aarav@univ.edu` (host),
 
 ## Environment variables
 
-Server (`server/.env`) — see [`.env.example`](.env.example) for the full list:
+Server (`.env` in the repository root) — see [`.env.example`](.env.example) for the full list:
 
 | Variable                                                  | Required  | Description                                                   |
 | --------------------------------------------------------- | :-------: | ------------------------------------------------------------- |
@@ -232,29 +215,6 @@ Never commit `.env`. See [`DEPLOY.md`](DEPLOY.md) for more.
 | Roles    | Driver / Rider       | **Student / Host / Passenger**                                          |
 | Safety   | Generic              | **Campus-aware** SOS + escalation, check-in, safe-arrival               |
 | Purpose  | Commercial transport | **Community mobility** + sustainability                                 |
-
-## Documentation
-
-**Markdown**
-
-- 📘 [Project Overview](docs/PROJECT_OVERVIEW.md) — what/why/how, roles, subsystems
-- 🏗️ [Architecture & Diagrams](docs/ARCHITECTURE.md) — system design, all flows, ER model
-- 📄 [Project Report](docs/PROJECT_REPORT.md) — formal 16-section report
-- 🎤 [Presentation Guide](docs/PRESENTATION_GUIDE.md) — demo & presentation scripts + Q&A
-
-**PDF (cover · contents · page numbers · rendered diagrams · screenshots)**
-
-- 📕 [CampusPool_Project_Report.pdf](docs/CampusPool_Project_Report.pdf)
-- 📘 [CampusPool_Architecture.pdf](docs/CampusPool_Architecture.pdf)
-- 📗 [CampusPool_Presentation.pdf](docs/CampusPool_Presentation.pdf)
-
-**Diagrams** — ten rendered SVG/PNG assets in [`docs/assets/diagrams/`](docs/assets/diagrams)
-(system architecture, ER, auth, verification, trip lifecycle, matching, safety/SOS,
-payment, notification, real-time chat).
-
-> The PDFs and diagram assets are reproducible from the markdown via the build scripts
-> in [`docs/.tooling/`](docs/.tooling) (`render-diagrams.mjs`, `build-pdf.mjs`) — they
-> render Mermaid to SVG and print styled HTML to PDF using the project's headless Chrome.
 
 ## Status
 
