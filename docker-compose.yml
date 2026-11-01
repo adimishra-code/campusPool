@@ -33,7 +33,7 @@ services:
     environment:
       NODE_ENV: production
       PORT: "5000"
-      MONGO_URI: mongodb://${MONGO_USER:-campuspool}:${MONGO_PASSWORD:-change-me-mongo}@mongo:27017/campus_rideshare?authSource=admin
+      MONGO_URI: mongodb://${MONGO_USER:-campuspool}:${MONGO_PASSWORD:-change-me-mongo}@mongo:27017/campuspool?authSource=admin
       JWT_SECRET: ${JWT_SECRET:?set JWT_SECRET in .env}
       CLIENT_URL: ${CLIENT_URL:-http://localhost:8080}
       COOKIE_SAMESITE: ${COOKIE_SAMESITE:-lax}

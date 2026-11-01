@@ -47,9 +47,9 @@ app.use(
 );
 app.use(cors({ origin: env.clientUrl, credentials: true }));
 app.use(express.json({ limit: "1mb" }));
-app.use(cookieParser()); // Parse the auth cookie
-app.use(hpp()); // Prevent HTTP parameter pollution
-app.use(mongoSanitize); // Sanitize inputs to prevent MongoDB injection
+app.use(cookieParser()); // parse the httpOnly auth cookie into req.cookies
+app.use(hpp()); // collapse duplicated query/body params (HTTP parameter pollution)
+app.use(mongoSanitize); // strip MongoDB operator keys ($, dotted) from input
 app.use(morgan(env.nodeEnv === "production" ? "combined" : "dev"));
 app.use(rateLimit({ windowMs: 15 * 60 * 1000, limit: 300, store: makeRateLimitStore("global") }));
 

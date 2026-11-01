@@ -7,5 +7,19 @@ export default defineConfig({
     port: 5173,
     host: "0.0.0.0",
     allowedHosts: true
+  },
+  build: {
+    chunkSizeWarningLimit: 600,
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          vendor: ["react", "react-dom", "react-router-dom"],
+          redux: ["@reduxjs/toolkit", "react-redux"],
+          maps: ["@react-google-maps/api"],
+          socket: ["socket.io-client"],
+          icons: ["lucide-react"]
+        }
+      }
+    }
   }
 });

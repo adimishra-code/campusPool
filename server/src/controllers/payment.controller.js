@@ -11,11 +11,22 @@ export const listPayments = asyncHandler(async (req, res) => {
 });
 
 export const updatePaymentStatus = asyncHandler(async (req, res) => {
-  const payment = await Payment.findByIdAndUpdate(
-    req.params.id,
-    { status: req.body.status, providerReference: req.body.providerReference },
-    { new: true }
-  );
+  const payment = await Payment.findById(req.params.id);
+  if (!payment) {
+    const error = new Error("Payment not found");
+    error.statusCode = 404;
+    throw error;
+  }
+  if (req.user.role !== "admin" && payment.user.toString() !== req.user._id.toString()) {
+    const error = new Error("Not authorized to update this payment");
+    error.statusCode = 403;
+    throw error;
+  }
+  if (req.body.status) payment.status = req.body.status;
+  if (req.body.providerReference !== undefined) {
+    payment.providerReference = req.body.providerReference;
+  }
+  await payment.save();
   res.json({ payment });
 });
 

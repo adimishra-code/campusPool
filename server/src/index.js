@@ -6,11 +6,19 @@ import { connectDB } from "./config/db.js";
 import { env, assertRequiredSecrets } from "./config/env.js";
 import { registerSocketHandlers } from "./sockets/index.js";
 import { startArrivalEscalationScheduler } from "./services/escalation.service.js";
+import College from "./models/College.js";
+import FeatureFlag from "./models/FeatureFlag.js";
 
 // Verify configuration requirements before starting.
 assertRequiredSecrets();
 
 await connectDB();
+
+// Initialize reference seed data once at boot
+await Promise.all([
+  College.initializeDefaults().catch(console.error),
+  FeatureFlag.initializeDefaults().catch(console.error)
+]);
 
 const server = http.createServer(app);
 const io = new Server(server, {

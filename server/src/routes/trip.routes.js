@@ -1,4 +1,5 @@
-﻿import express from "express";
+import express from "express";
+import { param } from "express-validator";
 import {
   estimateTrip,
   offerTrip,
@@ -110,7 +111,8 @@ router.patch(
 );
 
 // Passenger management (host only)
-router.post("/:id/approve/:userId", protect, validate(tripIdRule), approvePassenger);
-router.post("/:id/reject/:userId", protect, validate(tripIdRule), rejectPassenger);
+const passengerActionRule = [...tripIdRule, param("userId").isMongoId().withMessage("Invalid user ID")];
+router.post("/:id/approve/:userId", protect, validate(passengerActionRule), approvePassenger);
+router.post("/:id/reject/:userId", protect, validate(passengerActionRule), rejectPassenger);
 
 export default router;

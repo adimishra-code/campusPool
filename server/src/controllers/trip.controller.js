@@ -390,6 +390,15 @@ export const cancelTrip = asyncHandler(async (req, res) => {
 
   await AuditLog.log("trip.cancel", "Trip", trip._id, req.user._id, { reason });
 
+  const io = req.app.get("io");
+  if (io) {
+    io.to(`trip:${trip._id}`).emit("trip:status", {
+      tripId: String(trip._id),
+      status: trip.status,
+      reason
+    });
+  }
+
   res.json({
     message: "Trip cancelled"
   });
@@ -412,6 +421,14 @@ export const startTrip = asyncHandler(async (req, res) => {
   }
 
   await trip.start();
+
+  const io = req.app.get("io");
+  if (io) {
+    io.to(`trip:${trip._id}`).emit("trip:status", {
+      tripId: String(trip._id),
+      status: trip.status
+    });
+  }
 
   res.json({
     message: "Trip started",
@@ -443,18 +460,28 @@ export const completeTrip = asyncHandler(async (req, res) => {
   await hostStats.recordAsHost(trip.distanceKm, trip.carbonSavedKg, trip.totalCost);
 
   // Update impact stats for passengers
-  for (const passenger of trip.passengers.filter((p) => p.status === "completed")) {
+  const completedPassengers = trip.passengers.filter((p) => p.status === "completed");
+  const passengerCount = Math.max(1, completedPassengers.length);
+  for (const passenger of completedPassengers) {
     const passengerStats = await ImpactStats.getOrCreate(passenger.user);
     await passengerStats.recordAsPassenger(
-      trip.distanceKm / trip.passengers.filter((p) => p.status === "approved").length,
-      trip.carbonSavedKg / trip.passengers.filter((p) => p.status === "approved").length,
+      trip.distanceKm / passengerCount,
+      trip.carbonSavedKg / passengerCount,
       trip.costPerPerson
     );
   }
 
   await AuditLog.log("trip.complete", "Trip", trip._id, req.user._id, {
-    passengers: trip.passengers.filter((p) => p.status === "approved").length
+    passengers: completedPassengers.length
   });
+
+  const io = req.app.get("io");
+  if (io) {
+    io.to(`trip:${trip._id}`).emit("trip:status", {
+      tripId: String(trip._id),
+      status: trip.status
+    });
+  }
 
   res.json({
     message: "Trip completed",
@@ -467,17 +494,27 @@ export const completeTrip = asyncHandler(async (req, res) => {
 export const getMyTrips = asyncHandler(async (req, res) => {
   const { role, status, page = 1, limit = 20 } = req.query;
 
+  const pageNum = Math.max(1, parseInt(page, 10) || 1);
+  const limitNum = Math.min(50, Math.max(1, parseInt(limit, 10) || 20));
+  const skip = (pageNum - 1) * limitNum;
+
   let hostTrips = [];
   let passengerTrips = [];
+  let totalHost = 0;
+  let totalPassenger = 0;
 
   // Trips where I'm host
   if (!role || role === "host") {
     const hostQuery = { host: req.user._id };
     if (status) hostQuery.status = status;
-    hostTrips = await Trip.find(hostQuery)
-      .populate("vehicle", "make model color")
-      .sort("-departureTime")
-      .limit(parseInt(limit));
+    [hostTrips, totalHost] = await Promise.all([
+      Trip.find(hostQuery)
+        .populate("vehicle", "make model color")
+        .sort("-departureTime")
+        .skip(skip)
+        .limit(limitNum),
+      Trip.countDocuments(hostQuery)
+    ]);
   }
 
   // Trips where I'm passenger
@@ -486,18 +523,25 @@ export const getMyTrips = asyncHandler(async (req, res) => {
     if (status) {
       passengerQuery["passengers.status"] = status;
     }
-    passengerTrips = await Trip.find(passengerQuery)
-      .populate("host", "name avatarUrl hostel")
-      .populate("vehicle", "make model color")
-      .sort("-departureTime")
-      .limit(parseInt(limit));
+    [passengerTrips, totalPassenger] = await Promise.all([
+      Trip.find(passengerQuery)
+        .populate("host", "name avatarUrl hostel")
+        .populate("vehicle", "make model color")
+        .sort("-departureTime")
+        .skip(skip)
+        .limit(limitNum),
+      Trip.countDocuments(passengerQuery)
+    ]);
   }
+
+  const total = totalHost + totalPassenger;
 
   res.json({
     hostTrips,
     passengerTrips,
-    total: hostTrips.length + passengerTrips.length,
-    page: parseInt(page)
+    total,
+    page: pageNum,
+    pages: Math.ceil(total / limitNum) || 1
   });
 });
 
@@ -577,6 +621,15 @@ export const updateTripStatus = asyncHandler(async (req, res) => {
 
   await trip.save();
   await invalidateForTrip(trip._id);
+
+  const io = req.app.get("io");
+  if (io) {
+    io.to(`trip:${trip._id}`).emit("trip:status", {
+      tripId: String(trip._id),
+      status: trip.status,
+      note
+    });
+  }
 
   res.json({ trip });
 });

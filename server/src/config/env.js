@@ -47,6 +47,17 @@ export const env = {
   get googleOAuthConfigured() {
     return Boolean(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET);
   },
+  // Twilio SMS configuration for emergency safety alerts.
+  twilioAccountSid: process.env.TWILIO_ACCOUNT_SID || "",
+  twilioAuthToken: process.env.TWILIO_AUTH_TOKEN || "",
+  twilioFromNumber: process.env.TWILIO_FROM_NUMBER || "",
+  get smsConfigured() {
+    return Boolean(
+      process.env.TWILIO_ACCOUNT_SID &&
+        process.env.TWILIO_AUTH_TOKEN &&
+        process.env.TWILIO_FROM_NUMBER
+    );
+  },
   // Arrival escalation thresholds: grace period in minutes, check interval in seconds.
   arrivalGraceMinutes: Number(process.env.ARRIVAL_GRACE_MINUTES || 15),
   arrivalScanIntervalSeconds: Number(process.env.ARRIVAL_SCAN_INTERVAL_SECONDS || 60),

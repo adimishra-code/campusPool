@@ -104,7 +104,6 @@ export const register = asyncHandler(async (req, res) => {
   }
 
   // Associate the user with a college when their email domain matches one.
-  await College.initializeDefaults();
   const college = await College.matchEmail(email);
 
   const user = await User.create({
@@ -124,9 +123,6 @@ export const register = asyncHandler(async (req, res) => {
   // Create the verification record and send the email verification code.
   const verification = await Verification.create({ user: user._id, collegeEmail: { email } });
   const previewOtp = await issueOtp(verification, email).catch(() => null);
-
-  // Initialize feature flags in background
-  FeatureFlag.initializeDefaults().catch(console.error);
 
   await AuditLog.log("user.register", "User", user._id, user._id, {
     role: safeRole,

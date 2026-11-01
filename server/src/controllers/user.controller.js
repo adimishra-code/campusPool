@@ -308,10 +308,24 @@ export const adminUpdateUser = asyncHandler(async (req, res) => {
   const { role, verificationStatus, isActive } = req.body;
 
   const updates = {};
-  if (role) updates.role = role;
-  if (verificationStatus) updates.verificationStatus = verificationStatus;
+  if (role) {
+    if (!["student", "host", "admin"].includes(role)) {
+      const error = new Error("Invalid role: must be student, host, or admin");
+      error.statusCode = 400;
+      throw error;
+    }
+    updates.role = role;
+  }
+  if (verificationStatus) {
+    if (!["unverified", "pending", "approved", "rejected"].includes(verificationStatus)) {
+      const error = new Error("Invalid verificationStatus");
+      error.statusCode = 400;
+      throw error;
+    }
+    updates.verificationStatus = verificationStatus;
+  }
   if (isActive !== undefined) {
-    updates.isActive = isActive;
+    updates.isActive = Boolean(isActive);
     updates.isDeactivated = !isActive;
   }
 
@@ -320,6 +334,12 @@ export const adminUpdateUser = asyncHandler(async (req, res) => {
     { $set: updates },
     { new: true, runValidators: true }
   );
+
+  if (!user) {
+    const error = new Error("User not found");
+    error.statusCode = 404;
+    throw error;
+  }
 
   await AuditLog.log("admin.user.update", "User", user._id, req.user._id, { updates });
 

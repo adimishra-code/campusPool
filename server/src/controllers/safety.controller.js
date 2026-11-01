@@ -7,6 +7,7 @@ import { asyncHandler } from "../utils/asyncHandler.js";
 import { notifyUser } from "../services/notification.service.js";
 import { recomputeSafetyScore } from "../services/safety.service.js";
 import { sendSafetyAlertEmail } from "../services/email.service.js";
+import { sendSmsBulk } from "../services/sms.service.js";
 import { signShareToken, verifyShareToken } from "../utils/token.js";
 import { env } from "../config/env.js";
 
@@ -92,14 +93,18 @@ export const triggerSos = asyncHandler(async (req, res) => {
   // Email the user and campus operations (real delivery via SMTP when
   // configured, otherwise logged). Fire-and-forget so the response isn't
   // blocked on mail delivery.
+  const where = location ? ` Last location: ${location[1]}, ${location[0]}.` : "";
+  const body = `${req.user.name} raised an emergency SOS alert on a shared CampusPool trip.${where}`;
+  sendSafetyAlertEmail([req.user.email, env.supportEmail], {
+    subject: `🚨 CampusPool SOS — ${req.user.name}`,
+    text: body,
+    html: `<p><strong>🚨 CampusPool SOS alert</strong></p><p>${body}</p>`
+  }).catch(() => {});
+
+  // SMS alert to emergency contacts when configured
   if (contacts.length) {
-    const where = location ? ` Last location: ${location[1]}, ${location[0]}.` : "";
-    const body = `${req.user.name} raised an emergency SOS alert on a shared CampusPool trip.${where}`;
-    sendSafetyAlertEmail([req.user.email, env.supportEmail], {
-      subject: `🚨 CampusPool SOS — ${req.user.name}`,
-      text: body,
-      html: `<p><strong>🚨 CampusPool SOS alert</strong></p><p>${body}</p>`
-    }).catch(() => {});
+    const contactPhones = contacts.map((c) => c.phone).filter(Boolean);
+    sendSmsBulk(contactPhones, `🚨 CampusPool SOS: ${body}`).catch(() => {});
   }
 
   res.status(201).json({
