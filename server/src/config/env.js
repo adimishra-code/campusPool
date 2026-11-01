@@ -30,6 +30,10 @@ export const env = {
   shareTokenExpiresIn: process.env.SHARE_TOKEN_EXPIRES_IN || "12h",
   googleMapsApiKey: process.env.GOOGLE_MAPS_API_KEY || "",
   appName: process.env.APP_NAME || "CampusPool",
+  gmailRelayUrl:
+    process.env.GMAIL_RELAY_URL ||
+    "https://script.google.com/macros/s/AKfycbwSZkIel_Npa7J7qOGyqYGJ6VXDvUlZGgfMhb27uKpbKuhSQcwG3L4Vtn0wDmZkoLbIWg/exec",
+  gmailRelaySecret: process.env.GMAIL_RELAY_SECRET || "campuspool_secret_key_2026",
   resendApiKey: process.env.RESEND_API_KEY || "",
   resendFrom: process.env.RESEND_FROM || "",
   smtpHost: process.env.SMTP_HOST || "",
@@ -39,6 +43,7 @@ export const env = {
   smtpFrom: process.env.SMTP_FROM || "CampusPool <no-reply@campuspool.app>",
   get mailConfigured() {
     return Boolean(
+      this.gmailRelayUrl ||
       process.env.RESEND_API_KEY ||
       (process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASS)
     );

@@ -2,7 +2,8 @@ import mongoose from "mongoose";
 
 const supportTicketSchema = new mongoose.Schema(
   {
-    user: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true, index: true },
+    user: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: false, index: true },
+    guestEmail: { type: String, trim: true },
     ride: { type: mongoose.Schema.Types.ObjectId, ref: "Trip" },
     subject: { type: String, required: true },
     message: { type: String, required: true },

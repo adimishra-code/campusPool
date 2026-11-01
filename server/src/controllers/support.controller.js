@@ -13,27 +13,45 @@ export const createTicketRules = [
 ];
 
 export const createTicket = asyncHandler(async (req, res) => {
-  const { subject, message, category, ride, meta } = req.body;
+  const { subject, message, category, ride, meta, email } = req.body;
+  const user = req.user;
+  const senderEmail = user?.email || email || "anonymous@campuspool.app";
+  const senderName = user?.name || "CampusPool User / Guest";
+
   const ticket = await SupportTicket.create({
     subject,
     message,
     category,
     ride,
-    user: req.user._id,
-    priority: category === "bug" ? "high" : undefined
+    user: user?._id || undefined,
+    guestEmail: user ? undefined : senderEmail,
+    priority: category === "bug" ? "high" : "medium"
   });
 
-  // Notify the support inbox and confirm to the user (dev mode logs instead of
-  // sending when SMTP isn't configured). Fire-and-forget — don't block the 201.
-  const who = `${req.user.name} <${req.user.email}>`;
-  const detail = meta ? `\n\nContext: ${JSON.stringify(meta)}` : "";
+  // Notify support inbox (adityamishrav820@gmail.com) via Gmail relay / email service
+  const who = user ? `${senderName} <${senderEmail}> (User ID: ${user._id})` : senderEmail;
+  const detail = meta ? `\n\nContext & Device:\n${JSON.stringify(meta, null, 2)}` : "";
+  const html = `<h2>🚨 New ${category === "bug" ? "Bug Report" : "Support Request"}</h2>
+    <p><strong>From:</strong> ${who}</p>
+    <p><strong>Subject:</strong> ${subject}</p>
+    <p><strong>Category:</strong> ${category || "support"}</p>
+    <p><strong>Ticket ID:</strong> ${ticket._id}</p>
+    <hr/>
+    <h3>Description:</h3>
+    <div style="white-space: pre-wrap; background: #f8fafc; border: 1px solid #e2e8f0; padding: 12px; border-radius: 6px; font-family: sans-serif;">${message}</div>
+    ${meta ? `<h4>Device / Diagnostics:</h4><pre style="background: #f1f5f9; padding: 10px; border-radius: 4px; font-size: 12px;">${JSON.stringify(meta, null, 2)}</pre>` : ""}`;
+
   sendSupportEmail({
-    subject: `[${category || "support"}] ${subject}`,
-    text: `New ${category || "support"} request from ${who}:\n\n${message}${detail}\n\nTicket: ${ticket._id}`
+    subject: `[CampusPool ${category === "bug" ? "Bug Report" : "Support"}] ${subject}`,
+    text: `New ${category || "support"} request from ${who}:\n\n${message}${detail}\n\nTicket: ${ticket._id}`,
+    html,
+    replyTo: senderEmail,
+    name: `${senderName} via CampusPool`
   }).catch((err) => console.error("Support email failed:", err.message));
-  sendSupportConfirmation(req.user.email, ticket).catch((err) =>
-    console.error("Support confirmation failed:", err.message)
-  );
+
+  if (senderEmail && senderEmail.includes("@") && !senderEmail.includes("anonymous")) {
+    sendSupportConfirmation(senderEmail, ticket).catch(() => {});
+  }
 
   res.status(201).json({ ticket });
 });

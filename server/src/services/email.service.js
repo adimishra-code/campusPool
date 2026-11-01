@@ -21,6 +21,32 @@ function getTransporter() {
   return transporter;
 }
 
+// Send via Google Apps Script HTTPS Webhook (Port 443 — sends directly from user's Gmail with 0 port blocks).
+async function sendViaGmailRelay({ to, subject, text, html, replyTo, name }) {
+  const res = await fetch(env.gmailRelayUrl, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      secret: env.gmailRelaySecret,
+      to,
+      subject,
+      text,
+      html,
+      replyTo,
+      name
+    })
+  });
+  if (!res.ok) {
+    const errText = await res.text().catch(() => "");
+    throw new Error(`Gmail relay HTTP error (${res.status}): ${errText}`);
+  }
+  const data = await res.json().catch(() => ({}));
+  if (data.error) {
+    throw new Error(`Gmail relay error: ${data.error}`);
+  }
+  return { delivered: true, dev: false, provider: "gmail-relay" };
+}
+
 // Send via Resend HTTP REST API (Port 443 — works across all cloud providers and free tiers).
 async function sendViaResend({ to, subject, text, html }) {
   const from = env.resendFrom || "CampusPool <onboarding@resend.dev>";
@@ -51,8 +77,17 @@ async function sendViaResend({ to, subject, text, html }) {
  * 2. Uses SMTP if SMTP_HOST is configured.
  * 3. Falls back to console logging so codes/passwords are never lost even if ports are blocked.
  */
-export async function sendMail({ to, subject, text, html }) {
-  // 1. Try Resend HTTP API (Port 443 — unblocked on Render)
+export async function sendMail({ to, subject, text, html, replyTo, name }) {
+  // 1. Try Gmail Webhook Relay (Port 443 — sends directly from personal Gmail, 100% free, unblocked on Render)
+  if (env.gmailRelayUrl) {
+    try {
+      return await sendViaGmailRelay({ to, subject, text, html, replyTo, name });
+    } catch (err) {
+      console.error(`[email:gmail-relay:error] ${err.message}`);
+    }
+  }
+
+  // 2. Try Resend HTTP API (Port 443 — unblocked on Render)
   if (env.resendApiKey) {
     try {
       return await sendViaResend({ to, subject, text, html });
@@ -61,18 +96,19 @@ export async function sendMail({ to, subject, text, html }) {
     }
   }
 
-  // 2. Try SMTP transport if configured
+  // 3. Try SMTP transport if configured
   const tx = getTransporter();
   if (tx) {
     try {
-      await tx.sendMail({ from: env.smtpFrom, to, subject, text, html });
+      const from = name ? `"${name}" <${env.smtpFrom}>` : env.smtpFrom;
+      await tx.sendMail({ from, to, subject, text, html, replyTo });
       return { delivered: true, dev: false, provider: "smtp" };
     } catch (err) {
       console.error(`[email:smtp:error] Failed to send via SMTP (${err.message})`);
     }
   }
 
-  // 3. Fallback / Dev: Log clearly to server console so OTP is immediately visible in logs
+  // 4. Fallback / Dev: Log clearly to server console so OTP is immediately visible in logs
   console.log(`\n==================================================\n[EMAIL OTP FALLBACK]\nTo: ${to}\nSubject: ${subject}\n${text || ""}\n==================================================\n`);
   return { delivered: false, dev: true };
 }
@@ -121,8 +157,8 @@ export async function sendSafetyAlertEmail(recipients, { subject, text, html }) 
 }
 
 // Notify the support inbox about a new ticket/feedback/bug report.
-export async function sendSupportEmail({ subject, text, html }) {
-  return sendMail({ to: env.supportEmail, subject, text, html });
+export async function sendSupportEmail({ subject, text, html, replyTo, name }) {
+  return sendMail({ to: env.supportEmail, subject, text, html, replyTo, name });
 }
 
 // Confirmation back to the user who opened a ticket.

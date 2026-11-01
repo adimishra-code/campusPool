@@ -5,7 +5,7 @@ import api from "../services/api.js";
 import { trackEvent } from "../services/tracking.js";
 
 export default function ReportBug() {
-  const [form, setForm] = useState({ subject: "", message: "" });
+  const [form, setForm] = useState({ email: "", subject: "", message: "" });
   const [state, setState] = useState({ sending: false, ok: false, error: null });
   const set = (k) => (e) => setForm({ ...form, [k]: e.target.value });
 
@@ -22,6 +22,7 @@ export default function ReportBug() {
     };
     try {
       await api.post("/support", {
+        email: form.email || undefined,
         subject: form.subject,
         message: form.message,
         category: "bug",
@@ -29,17 +30,14 @@ export default function ReportBug() {
       });
       trackEvent("bug_report", {});
       setState({ sending: false, ok: true, error: null });
-      setForm({ subject: "", message: "" });
+      setForm({ email: "", subject: "", message: "" });
     } catch (err) {
-      const status = err.response?.status;
       setState({
         sending: false,
         ok: false,
         error:
-          status === 401
-            ? `Please sign in to file a bug report, or email us at ${SUPPORT_EMAIL}.`
-            : err.response?.data?.message ||
-              "Could not send. Please try again or email us directly."
+          err.response?.data?.message ||
+          "Could not send. Please try again or email us directly."
       });
     }
   };
@@ -66,6 +64,15 @@ export default function ReportBug() {
         {state.error && <div className="alert error">{state.error}</div>}
 
         <form className="panel form-grid" onSubmit={submit}>
+          <label className="field" style={{ gridColumn: "1 / -1" }}>
+            <span>Your email (for updates)</span>
+            <input
+              type="email"
+              value={form.email}
+              onChange={set("email")}
+              placeholder="e.g. name@gbu.ac.in"
+            />
+          </label>
           <label className="field" style={{ gridColumn: "1 / -1" }}>
             <span>What went wrong?</span>
             <input

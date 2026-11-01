@@ -67,7 +67,7 @@ function FallbackMap({ pickup, destination, caption }) {
   );
 }
 
-export default function GoogleMapPanel({
+function RealGoogleMapPanel({
   pickup,
   destination,
   route,
@@ -76,12 +76,11 @@ export default function GoogleMapPanel({
   interactive = false,
   onPickupSelected,
   onDestinationSelected,
-  caption
+  apiKey
 }) {
   const pickupRef = useRef(null);
   const destinationRef = useRef(null);
-  const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
-  const { isLoaded } = useJsApiLoader({ googleMapsApiKey: apiKey || "missing", libraries });
+  const { isLoaded } = useJsApiLoader({ googleMapsApiKey: apiKey, libraries });
   const path = route?.polyline ? decodePolyline(route.polyline) : [];
 
   const selectPlace = (ref, handler) => {
@@ -94,7 +93,6 @@ export default function GoogleMapPanel({
     });
   };
 
-  if (!apiKey) return <FallbackMap pickup={pickup} destination={destination} caption={caption} />;
   if (!isLoaded) return <section className="map-panel skeleton" />;
 
   return (
@@ -148,4 +146,12 @@ export default function GoogleMapPanel({
       </GoogleMap>
     </section>
   );
+}
+
+export default function GoogleMapPanel(props) {
+  const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
+  if (!apiKey) {
+    return <FallbackMap pickup={props.pickup} destination={props.destination} caption={props.caption} />;
+  }
+  return <RealGoogleMapPanel {...props} apiKey={apiKey} />;
 }
