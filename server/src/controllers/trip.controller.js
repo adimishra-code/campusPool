@@ -7,6 +7,35 @@ import AuditLog from "../models/AuditLog.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { estimateDistanceAndDuration } from "../services/fare.service.js";
 
+// Helper: Verify if a location is anchored to Gautam Buddha University / Greater Noida campus zone.
+function isCampusAnchorLocation(loc) {
+  if (!loc) return false;
+  const address = (loc.address || "").toLowerCase();
+  if (
+    address.includes("gautam buddha") ||
+    address.includes("gbu") ||
+    address.includes("hostel") ||
+    address.includes("greater noida") ||
+    address.includes("pari chowk") ||
+    address.includes("knowledge park")
+  ) {
+    return true;
+  }
+  // Check if within 25km radius of GBU center [77.5259, 28.4215]
+  if (Array.isArray(loc.coordinates?.coordinates)) {
+    const [lng, lat] = loc.coordinates.coordinates;
+    const toRad = (v) => (v * Math.PI) / 180;
+    const dLat = toRad(lat - 28.4215);
+    const dLng = toRad(lng - 77.5259);
+    const a =
+      Math.sin(dLat / 2) ** 2 +
+      Math.cos(toRad(28.4215)) * Math.cos(toRad(lat)) * Math.sin(dLng / 2) ** 2;
+    const distKm = 6371 * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    if (distKm <= 25) return true;
+  }
+  return false;
+}
+
 export const offerTripRules = [
   body("pickup.address").trim().notEmpty().isLength({ max: 200 }),
   body("pickup.coordinates.coordinates").isArray({ min: 2, max: 2 }),
@@ -96,6 +125,17 @@ export const offerTrip = asyncHandler(async (req, res) => {
 
   if (vehicle.verificationStatus !== "approved") {
     const error = new Error("Vehicle must be verified before offering rides");
+    error.statusCode = 400;
+    throw error;
+  }
+
+  // Legal & Community Compliance: At least one point (pickup or drop) must be anchored to GBU
+  const isPickupAnchor = isCampusAnchorLocation(pickup);
+  const isDestAnchor = isCampusAnchorLocation(destination);
+  if (!isPickupAnchor && !isDestAnchor) {
+    const error = new Error(
+      "Compliance Policy: At least one location (pickup or destination) must be an official Gautam Buddha University campus location."
+    );
     error.statusCode = 400;
     throw error;
   }

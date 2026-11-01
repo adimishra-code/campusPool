@@ -64,11 +64,10 @@ export async function issueOtp(verification, email) {
     otpExpiresAt: new Date(Date.now() + 10 * 60 * 1000)
   };
   await verification.save();
-  try {
-    await sendOtpEmail(email, otp);
-  } catch (err) {
+  // Dispatch email in background so the UI response returns immediately without hanging on SMTP timeouts
+  sendOtpEmail(email, otp).catch((err) => {
     console.error("OTP email failed:", err.message);
-  }
+  });
   // Never echo OTPs to clients in production, even if SMTP is misconfigured.
   return env.mailConfigured || env.nodeEnv === "production" ? null : otp;
 }

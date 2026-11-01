@@ -13,7 +13,9 @@ function getTransporter() {
       port: env.smtpPort,
       secure: env.smtpPort === 465,
       auth: { user: env.smtpUser, pass: env.smtpPass },
-      connectionTimeout: 5000 // fail fast if Render blocks the port
+      connectionTimeout: 2500, // fail fast if network/host blocks ports
+      greetingTimeout: 2500,
+      socketTimeout: 2500
     });
   }
   return transporter;

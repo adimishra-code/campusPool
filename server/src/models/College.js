@@ -32,7 +32,7 @@ collegeSchema.statics.initializeDefaults = async function () {
   const count = await this.countDocuments();
   if (count > 0) return;
   await this.create([
-    { name: "Demo University", domains: ["univ.edu", "demo.edu"], status: "active" },
+    { name: "Gautam Buddha University", domains: ["gbu.ac.in", "gmail.com", "univ.edu"], status: "active" },
     { name: "Campus Institute of Technology", domains: ["cit.edu"], status: "active" }
   ]);
 };

@@ -2,10 +2,10 @@ import { useEffect, useMemo, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import { fetchTrips, joinTrip, trackClick } from "../store/tripSlice.js";
-import { CAMPUS_PLACES, placeByAddress } from "../constants/places.js";
 import TripCard from "../components/TripCard.jsx";
 import EmptyState from "../components/EmptyState.jsx";
 import GoogleMapPanel from "../components/GoogleMapPanel.jsx";
+import LocationSelector from "../components/LocationSelector.jsx";
 import Icon from "../components/Icon.jsx";
 
 export default function FindTrips() {
@@ -14,8 +14,8 @@ export default function FindTrips() {
   const { items, status, error } = useSelector((s) => s.trips.feed);
   const action = useSelector((s) => s.trips.action);
 
-  const [source, setSource] = useState("");
-  const [destination, setDestination] = useState("");
+  const [sourcePlace, setSourcePlace] = useState(null);
+  const [destPlace, setDestPlace] = useState(null);
   const [date, setDate] = useState("");
   const [minSeats, setMinSeats] = useState(1);
   const [joiningId, setJoiningId] = useState(null);
@@ -23,10 +23,10 @@ export default function FindTrips() {
 
   // Pass the chosen route to the API so results are ranked by match score.
   useEffect(() => {
-    const pickup = source ? placeByAddress(source)?.coordinates : null;
-    const dest = destination ? placeByAddress(destination)?.coordinates : null;
+    const pickup = sourcePlace ? sourcePlace.coordinates : null;
+    const dest = destPlace ? destPlace.coordinates : null;
     dispatch(fetchTrips({ date: date || undefined, pickup, destination: dest }));
-  }, [dispatch, source, destination, date]);
+  }, [dispatch, sourcePlace, destPlace, date]);
 
   // Results are already ranked server-side; only the seats filter is client-side.
   const filtered = useMemo(
@@ -53,8 +53,8 @@ export default function FindTrips() {
 
   const onView = (trip) => dispatch(trackClick({ id: trip._id, matchScore: trip.matchScore }));
   const resetFilters = () => {
-    setSource("");
-    setDestination("");
+    setSourcePlace(null);
+    setDestPlace(null);
     setDate("");
     setMinSeats(1);
   };
@@ -73,28 +73,18 @@ export default function FindTrips() {
 
       <section className="panel filters">
         <div className="filters-grid">
-          <label className="field">
-            <span>From</span>
-            <select value={source} onChange={(e) => setSource(e.target.value)}>
-              <option value="">Anywhere</option>
-              {CAMPUS_PLACES.map((p) => (
-                <option key={p.id} value={p.address}>
-                  {p.label}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label className="field">
-            <span>To</span>
-            <select value={destination} onChange={(e) => setDestination(e.target.value)}>
-              <option value="">Anywhere</option>
-              {CAMPUS_PLACES.map((p) => (
-                <option key={p.id} value={p.address}>
-                  {p.label}
-                </option>
-              ))}
-            </select>
-          </label>
+          <LocationSelector
+            label="From"
+            value={sourcePlace}
+            onChange={setSourcePlace}
+            allowAnywhere={true}
+          />
+          <LocationSelector
+            label="To"
+            value={destPlace}
+            onChange={setDestPlace}
+            allowAnywhere={true}
+          />
           <label className="field">
             <span>Date</span>
             <input type="date" value={date} onChange={(e) => setDate(e.target.value)} />

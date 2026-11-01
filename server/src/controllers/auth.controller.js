@@ -75,7 +75,8 @@ async function issueLoginOtp(user) {
   const code = String(crypto.randomInt(100000, 1000000));
   user.otp = { code, expiresAt: new Date(Date.now() + 5 * 60 * 1000), attempts: 0 };
   await user.save();
-  await sendLoginOtpEmail(user.email, code).catch((err) =>
+  // Dispatch in background so the client doesn't freeze waiting for SMTP timeouts
+  sendLoginOtpEmail(user.email, code).catch((err) =>
     console.error("Login OTP email failed:", err.message)
   );
   // Never echo OTPs in production / when real mail is configured.
@@ -404,9 +405,9 @@ export const requestOtp = asyncHandler(async (req, res) => {
     throw error;
   }
 
-  // Deliver the code to the registered email address.
+  // Deliver the code to the registered email address in background.
   if (env.mailConfigured) {
-    await sendOtpEmail(user.email, code).catch(() => {});
+    sendOtpEmail(user.email, code).catch(() => {});
   }
 
   // Echo the code back only in non-production environments when email is unconfigured.

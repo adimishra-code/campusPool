@@ -3,9 +3,10 @@ import { useDispatch, useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import api from "../services/api.js";
 import { offerTrip } from "../store/tripSlice.js";
-import { CAMPUS_PLACES, placeByAddress, toLocation } from "../constants/places.js";
+import { GBU_PLACES, toLocation, isCampusAnchor } from "../constants/places.js";
 import EmptyState from "../components/EmptyState.jsx";
 import GoogleMapPanel from "../components/GoogleMapPanel.jsx";
+import LocationSelector from "../components/LocationSelector.jsx";
 
 const blankVehicle = { make: "", model: "", color: "", plateNumber: "", seats: 4, category: "car" };
 
@@ -22,9 +23,13 @@ export default function OfferTrip() {
   const [newVehicle, setNewVehicle] = useState(blankVehicle);
   const [vehicleError, setVehicleError] = useState(null);
 
+  // Selected pickup & destination objects with GBU defaults
+  const [pickupPlace, setPickupPlace] = useState(GBU_PLACES[0]); // GBU Gate 1
+  const [destPlace, setDestPlace] = useState(
+    GBU_PLACES.find((p) => p.id === "pari-chowk") || GBU_PLACES[1]
+  );
+
   const [form, setForm] = useState({
-    source: "campus",
-    destination: "metro",
     date: "",
     time: "",
     seats: 4,
@@ -35,6 +40,26 @@ export default function OfferTrip() {
   const [estimate, setEstimate] = useState(null);
   const [estimateError, setEstimateError] = useState(null);
   const [formError, setFormError] = useState(null);
+
+  // The "One-Anchor" Rule: If one point is custom-typed, the other MUST be an official GBU Campus location!
+  const pickupLockedToCampus = Boolean(destPlace?.isCustom);
+  const destLockedToCampus = Boolean(pickupPlace?.isCustom);
+
+  const handleSetPickup = (newPlace) => {
+    setPickupPlace(newPlace);
+    // If setting pickup to custom, make sure destination is an official GBU campus location
+    if (newPlace?.isCustom && !isCampusAnchor(destPlace)) {
+      setDestPlace(GBU_PLACES[0]);
+    }
+  };
+
+  const handleSetDest = (newPlace) => {
+    setDestPlace(newPlace);
+    // If setting destination to custom, make sure pickup is an official GBU campus location
+    if (newPlace?.isCustom && !isCampusAnchor(pickupPlace)) {
+      setPickupPlace(GBU_PLACES[0]);
+    }
+  };
 
   const loadVehicles = async () => {
     setLoadingVehicles(true);
@@ -59,11 +84,10 @@ export default function OfferTrip() {
   const set = (k) => (e) => setForm({ ...form, [k]: e.target.value });
 
   const buildLocations = () => {
-    const src =
-      placeByAddress(CAMPUS_PLACES.find((p) => p.id === form.source)?.address) ||
-      CAMPUS_PLACES.find((p) => p.id === form.source);
-    const dst = CAMPUS_PLACES.find((p) => p.id === form.destination);
-    return { pickup: toLocation(src), destination: toLocation(dst) };
+    return {
+      pickup: toLocation(pickupPlace),
+      destination: toLocation(destPlace)
+    };
   };
 
   const runEstimate = async () => {
@@ -100,12 +124,20 @@ export default function OfferTrip() {
   const submit = async (e) => {
     e.preventDefault();
     setFormError(null);
-    if (form.source === form.destination) return setFormError("Source and destination must differ");
+    const { pickup, destination } = buildLocations();
+    if (!pickup.address || !destination.address) {
+      return setFormError("Please select or enter both pickup and destination");
+    }
+    if (pickup.address.trim() === destination.address.trim()) {
+      return setFormError("Pickup and destination must differ");
+    }
+    if (pickupPlace?.isCustom && destPlace?.isCustom) {
+      return setFormError("At least one location must be an official GBU Campus location.");
+    }
     if (!form.date || !form.time) return setFormError("Pick a date and time");
     if (!form.vehicleId) return setFormError("Select a verified vehicle");
     if (!form.costPerPerson) return setFormError("Enter cost per person");
 
-    const { pickup, destination } = buildLocations();
     const departureTime = new Date(`${form.date}T${form.time}`).toISOString();
     const res = await dispatch(
       offerTrip({
@@ -214,26 +246,20 @@ export default function OfferTrip() {
         <div className="two-column offer-layout">
           <form className="panel offer-form" onSubmit={submit}>
             <div className="form-grid">
-              <label className="field">
-                <span>From</span>
-                <select value={form.source} onChange={set("source")}>
-                  {CAMPUS_PLACES.map((p) => (
-                    <option key={p.id} value={p.id}>
-                      {p.label}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <label className="field">
-                <span>To</span>
-                <select value={form.destination} onChange={set("destination")}>
-                  {CAMPUS_PLACES.map((p) => (
-                    <option key={p.id} value={p.id}>
-                      {p.label}
-                    </option>
-                  ))}
-                </select>
-              </label>
+              <LocationSelector
+                label="From (Pickup)"
+                value={pickupPlace}
+                onChange={handleSetPickup}
+                lockedToCampus={pickupLockedToCampus}
+                lockReason="Destination is custom-typed, so pickup must be an official GBU Campus point"
+              />
+              <LocationSelector
+                label="To (Destination)"
+                value={destPlace}
+                onChange={handleSetDest}
+                lockedToCampus={destLockedToCampus}
+                lockReason="Pickup is custom-typed, so destination must be an official GBU Campus point"
+              />
               <label className="field">
                 <span>Date</span>
                 <input type="date" value={form.date} onChange={set("date")} />
