@@ -34,8 +34,8 @@ app.set("io", io);
 // Start background safety scheduler for overdue arrival escalations.
 const escalationTimer = startArrivalEscalationScheduler(io);
 
-server.listen(env.port, () => {
-  console.log(`API listening on http://localhost:${env.port}`);
+server.listen(env.port, "0.0.0.0", () => {
+  console.log(`API listening on port ${env.port}`);
 });
 
 // Graceful shutdown: stops scheduler, closes server, sockets, and DB.

@@ -61,7 +61,7 @@ export const env = {
   // Arrival escalation thresholds: grace period in minutes, check interval in seconds.
   arrivalGraceMinutes: Number(process.env.ARRIVAL_GRACE_MINUTES || 15),
   arrivalScanIntervalSeconds: Number(process.env.ARRIVAL_SCAN_INTERVAL_SECONDS || 60),
-  redisUrl: process.env.REDIS_URL || "redis://localhost:6379",
+  redisUrl: process.env.REDIS_URL || "",
   rateLimitRedisPrefix: process.env.RATE_LIMIT_REDIS_PREFIX || "campuspool:ratelimit",
   // Global auth rate limit (requests per IP per 15 min).
   authRateLimit: Number(process.env.AUTH_RATE_LIMIT || 40),
