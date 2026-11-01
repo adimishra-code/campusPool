@@ -5,31 +5,74 @@ let transporter = null;
 
 // Lazily build a real SMTP transport when SMTP_* env vars are configured.
 function getTransporter() {
-  if (!env.mailConfigured) return null;
+  const hasSmtp = Boolean(env.smtpHost && env.smtpUser && env.smtpPass);
+  if (!hasSmtp) return null;
   if (!transporter) {
     transporter = nodemailer.createTransport({
       host: env.smtpHost,
       port: env.smtpPort,
       secure: env.smtpPort === 465,
-      auth: { user: env.smtpUser, pass: env.smtpPass }
+      auth: { user: env.smtpUser, pass: env.smtpPass },
+      connectionTimeout: 5000 // fail fast if Render blocks the port
     });
   }
   return transporter;
 }
 
+// Send via Resend HTTP REST API (Port 443 — works across all cloud providers and free tiers).
+async function sendViaResend({ to, subject, text, html }) {
+  const from = env.resendFrom || "CampusPool <onboarding@resend.dev>";
+  const res = await fetch("https://api.resend.com/emails", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${env.resendApiKey}`,
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      from,
+      to: Array.isArray(to) ? to : [to],
+      subject,
+      text,
+      html
+    })
+  });
+  if (!res.ok) {
+    const errorBody = await res.json().catch(() => ({}));
+    throw new Error(`Resend API error (${res.status}): ${JSON.stringify(errorBody)}`);
+  }
+  return { delivered: true, dev: false, provider: "resend" };
+}
+
 /**
- * Send an email. When SMTP is not configured (local dev), we don't fail —
- * we log the message so the flow remains testable.
+ * Send an email.
+ * 1. Uses Resend HTTP API (Port 443) if RESEND_API_KEY is provided.
+ * 2. Uses SMTP if SMTP_HOST is configured.
+ * 3. Falls back to console logging so codes/passwords are never lost even if ports are blocked.
  */
 export async function sendMail({ to, subject, text, html }) {
-  const tx = getTransporter();
-  if (!tx) {
-    if (env.nodeEnv !== "test")
-      console.log(`[email:dev] To: ${to} | Subject: ${subject}\n${text || ""}`);
-    return { delivered: false, dev: true };
+  // 1. Try Resend HTTP API (Port 443 — unblocked on Render)
+  if (env.resendApiKey) {
+    try {
+      return await sendViaResend({ to, subject, text, html });
+    } catch (err) {
+      console.error(`[email:resend:error] ${err.message}`);
+    }
   }
-  await tx.sendMail({ from: env.smtpFrom, to, subject, text, html });
-  return { delivered: true, dev: false };
+
+  // 2. Try SMTP transport if configured
+  const tx = getTransporter();
+  if (tx) {
+    try {
+      await tx.sendMail({ from: env.smtpFrom, to, subject, text, html });
+      return { delivered: true, dev: false, provider: "smtp" };
+    } catch (err) {
+      console.error(`[email:smtp:error] Failed to send via SMTP (${err.message})`);
+    }
+  }
+
+  // 3. Fallback / Dev: Log clearly to server console so OTP is immediately visible in logs
+  console.log(`\n==================================================\n[EMAIL OTP FALLBACK]\nTo: ${to}\nSubject: ${subject}\n${text || ""}\n==================================================\n`);
+  return { delivered: false, dev: true };
 }
 
 export async function sendOtpEmail(to, otp) {

@@ -30,13 +30,18 @@ export const env = {
   shareTokenExpiresIn: process.env.SHARE_TOKEN_EXPIRES_IN || "12h",
   googleMapsApiKey: process.env.GOOGLE_MAPS_API_KEY || "",
   appName: process.env.APP_NAME || "CampusPool",
+  resendApiKey: process.env.RESEND_API_KEY || "",
+  resendFrom: process.env.RESEND_FROM || "",
   smtpHost: process.env.SMTP_HOST || "",
   smtpPort: Number(process.env.SMTP_PORT || 587),
   smtpUser: process.env.SMTP_USER || "",
   smtpPass: process.env.SMTP_PASS || "",
   smtpFrom: process.env.SMTP_FROM || "CampusPool <no-reply@campuspool.app>",
   get mailConfigured() {
-    return Boolean(process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASS);
+    return Boolean(
+      process.env.RESEND_API_KEY ||
+      (process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASS)
+    );
   },
   supportEmail: process.env.SUPPORT_EMAIL || "adityamishrav820@gmail.com",
   // Google OAuth (optional). Enabled only when client ID and secret are provided.
